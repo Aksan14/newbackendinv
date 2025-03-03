@@ -71,7 +71,7 @@ func (repository *userRepositoryImpl) FindByEmail(email string) (*model.User, er
 }
 
 func (repository *userRepositoryImpl) ReadUser(ctx context.Context, tx *sql.Tx) []model.User {
-	query := `SELECT id, nikadmin, email photo FROM register`
+	query := `SELECT id, nikadmin, email FROM admin`
 
 	rows, err := tx.QueryContext(ctx, query)
 	util.SentPanicIfError(err)
@@ -80,7 +80,7 @@ func (repository *userRepositoryImpl) ReadUser(ctx context.Context, tx *sql.Tx) 
 	var users []model.User
 	for rows.Next() {
 		user := model.User{}
-		err := rows.Scan(&user.Id, &user.Nikadmin, &user.Email, &user.Password)
+		err := rows.Scan(&user.Id, &user.Nikadmin, &user.Email)
 		util.SentPanicIfError(err)
 		users = append(users, user)
 	}
@@ -89,7 +89,7 @@ func (repository *userRepositoryImpl) ReadUser(ctx context.Context, tx *sql.Tx) 
 }
 
 func (r *userRepositoryImpl) UpdateResetToken(email, token string, expiry time.Time) error {
-    expiryTime := expiry.Format("2006-01-02 15:04:05")
+    expiryTime := expiry.Format("2006-01-02 15:05:05")
     query := `UPDATE admin SET reset_token = ?, reset_expiry = ? WHERE email = ?`
     _, err := r.DB.Exec(query, token, expiryTime, email)
     return err
@@ -126,4 +126,3 @@ func (r *wargaRepositoryImpl) InsertWarga(warga model.Warga) error {
 	_, err := r.db.Exec(query, warga.NIK, warga.NamaLengkap, warga.Alamat, warga.JenisSurat, warga.Keterangan, warga.FileUpload, warga.NoHP)
 	return err
 }
-

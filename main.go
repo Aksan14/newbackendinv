@@ -31,7 +31,7 @@ func main() {
 	router := httprouter.New()
 
 	// user
-	router.POST("/api/user/create", VerifyJWT(userController.CreateUser))
+	router.POST("/api/user/create", userController.CreateUser)
 	router.GET("/api/user", userController.ReadUser)
 	router.POST("/api/user/login", userController.LoginUser)
 	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
