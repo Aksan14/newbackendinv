@@ -4,6 +4,8 @@ type CreateUserRequest struct {
 	Nikadmin	string `json:"nikadmin"`
 	Email		string `json:"email"`
 	Pass		string `json:"password"`
+	NamaLengkap string `json:"namalengkap"`
+	Role_id		string	`json:"role_id"`
 }
 
 type LoginUserRequest struct {
@@ -16,17 +18,6 @@ type ForgotPasswordRequest struct {
 }
 
 type ResetPasswordRequest struct {
-    Token    string `json:"token" validate:"required"`
+    Token    string `json:"token"`
     Password string `json:"password" validate:"required,min=6"`
-}
-
-
-type WargaRequest struct {
-	NIK         string `json:"nik"`
-	NamaLengkap string `json:"nama_lengkap"`
-	Alamat      string `json:"alamat"`
-	JenisSurat  string `json:"jenis_surat"`
-	Keterangan  string `json:"keterangan"`
-	FileUpload  string `json:"file_upload"`
-	NoHP        string `json:"no_hp"`
 }

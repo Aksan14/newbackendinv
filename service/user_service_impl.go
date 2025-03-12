@@ -12,6 +12,7 @@ import (
 	"godesaapps/repository"
 	"godesaapps/util"
 	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -24,13 +25,32 @@ type userServiceImpl struct {
 	DB             *sql.DB
 }
 
-func (service *userServiceImpl) FindById(ctx context.Context, id string) (dto.UserResponse, error) {
-	panic("unimplemented")
+
+func (service *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikadmin string) (dto.UserResponse, error) {
+	tx, err := service.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	defer tx.Rollback()
+
+	user, err := service.UserRepository.FindByNik(ctx, tx, nikadmin)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return dto.UserResponse{}, err
+	}
+
+	return dto.UserResponse{
+		Id:          user.Id,
+		Email:       user.Email,
+		Nikadmin:    user.Nikadmin,
+		NamaLengkap: user.NamaLengkap,
+		Role_id:     user.Role_id,
+	}, nil
 }
 
-func (service *userServiceImpl) GetUserInfoByEmail(ctx context.Context, email string) (dto.UserResponse, error) {
-	panic("unimplemented")
-}
 
 func NewUserServiceImpl(userRepository repository.UserRepository, db *sql.DB) UserService {
 	return &userServiceImpl{
@@ -64,6 +84,8 @@ func (service *userServiceImpl) CreateUser(ctx context.Context, userRequest dto.
 		Email:    userRequest.Email,
 		Nikadmin: userRequest.Nikadmin,
 		Password: hashedPass,
+		NamaLengkap: userRequest.NamaLengkap,
+		Role_id: userRequest.Role_id,
 	}
 
 	createUser, errSave := service.UserRepository.CreateUser(ctx, tx, user)
@@ -82,15 +104,17 @@ func convertToResponseDTO(user model.User) dto.UserResponse {
 }
 
 type Claims struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Nikadmin string `json:"nikadmin"` 
 	jwt.StandardClaims
 }
 
-func (service *userServiceImpl) GenerateJWT(email string) (string, error) {
+func (service *userServiceImpl) GenerateJWT(email, nikadmin string) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &Claims{
 		Email: email,
+		Nikadmin: nikadmin,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 			Issuer:    "go-auth-example",
@@ -117,7 +141,7 @@ func (service *userServiceImpl) LoginUser(ctx context.Context, loginRequest dto.
 		return "", fmt.Errorf("invalid password")
 	}
 
-	token, err := service.GenerateJWT(loginRequest.Nikadmin)
+	token, err := service.GenerateJWT(user.Email, user.Nikadmin)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
@@ -125,19 +149,33 @@ func (service *userServiceImpl) LoginUser(ctx context.Context, loginRequest dto.
 	return token, nil
 }
 
-func (service *userServiceImpl) ReadUser(ctx context.Context) []dto.UserResponse {
-	tx, err := service.DB.Begin()
-	util.SentPanicIfError(err)
-	defer util.CommitOrRollBack(tx)
+func (service *userServiceImpl) FindByNIK(ctx context.Context, nik string) (*dto.UserResponse, error) {
+    tx, err := service.DB.Begin()
+    if err != nil {
+        return nil, err
+    }
+    defer tx.Rollback()
 
-	user := service.UserRepository.ReadUser(ctx, tx)
+    user, err := service.UserRepository.FindByNik(ctx, tx, nik)
+    if err != nil {
+        return nil, err
+    }
 
-	return util.ToUserListResponse(user)
+    response := dto.UserResponse{
+        Id:				user.Id,
+        Nikadmin:		user.Nikadmin,
+        Email:			user.Email,
+        Pass:			user.Password,
+    }
+    
+    tx.Commit()
+    return &response, nil
 }
+
 
 func (service *userServiceImpl) ForgotPassword(request dto.ForgotPasswordRequest) error {
     user, err := service.UserRepository.FindByEmail(request.Email)
-    if err != nil {
+	if err != nil {
         return errors.New("email tidak ditemukan")
     }
 
@@ -149,7 +187,7 @@ func (service *userServiceImpl) ForgotPassword(request dto.ForgotPasswordRequest
         return fmt.Errorf("gagal menyimpan token reset: %w", err)
     }
 
-    resetURL := fmt.Sprintf("http://domain.com/reset-password?token=%s", token)
+    resetURL := fmt.Sprintf("http://localhost:3000/authentication/reset-password?token=%s", token)
 	
     emailBody := fmt.Sprintf(`
         <html>
@@ -192,19 +230,4 @@ func generateToken(length int) string {
 	bytes := make([]byte, length)
 	rand.Read(bytes)
 	return base64.URLEncoding.EncodeToString(bytes)
-}
-
-type wargaServiceImpl struct {
-	repo repository.WargaRepository
-}
-
-func NewWargaService(repo repository.WargaRepository) WargaService {
-	return &wargaServiceImpl{repo: repo}
-}
-
-func (s *wargaServiceImpl) RegisterWarga(warga model.Warga) error {
-	if warga.NIK == "" || warga.NamaLengkap == "" || warga.Alamat == "" || warga.JenisSurat == "" || warga.NoHP == "" {
-		return errors.New("semua field wajib diisi")
-	}
-	return s.repo.InsertWarga(warga)
 }

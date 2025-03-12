@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"strings"
 	"godesaapps/config"
 	"godesaapps/controller"
 	"godesaapps/repository"
 	"godesaapps/service"
 	"godesaapps/util"
+	"net/http"
+	"strings"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -32,9 +33,8 @@ func main() {
 
 	// user
 	router.POST("/api/user/create", userController.CreateUser)
-	router.GET("/api/user", userController.ReadUser)
 	router.POST("/api/user/login", userController.LoginUser)
-	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
+	router.GET("/api/user/me",VerifyJWT(userController.GetUserInfo))
 	router.POST("/api/user/forgot-password", userController.ForgotPassword)
 	router.POST("/api/user/reset-password", userController.ResetPassword)
 
@@ -55,9 +55,10 @@ func main() {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true") 
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
@@ -67,6 +68,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

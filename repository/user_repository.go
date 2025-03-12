@@ -12,12 +12,7 @@ type UserRepository interface {
 	FindById(ctx context.Context, tx *sql.Tx, idUser string) (model.User, error)
 	FindByNik(ctx context.Context, tx *sql.Tx, email string) (model.User, error)
 	FindByEmail(email string) (*model.User, error)
-	ReadUser(ctx context.Context, tx *sql.Tx) []model.User
 	UpdateResetToken(email, token string, expiry time.Time) error
 	FindByResetToken(token string) (*model.User, error)
 	UpdatePassword(email, newPassword string) error
-}
-
-type WargaRepository interface {
-	InsertWarga(warga model.Warga) error
 }

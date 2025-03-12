@@ -2,14 +2,11 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"godesaapps/dto"
-	"godesaapps/model"
 	"godesaapps/service"
 	"godesaapps/util"
-	"io"
 	"net/http"
-	"os"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
@@ -25,79 +22,89 @@ func NewUserControllerImpl(userService service.UserService) UserController {
 	}
 }
 
-type wargaControllerImpl struct {
-	WargaService service.WargaService
-}
-
-func NewWargaController(wargaService service.WargaService) WargaController {
-	return &wargaControllerImpl{
-		WargaService: wargaService,
-	}
-}
-
 func (controller *userControllerImpl) CreateUser(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
 	requestCreate := dto.CreateUserRequest{}
 	util.ReadFromRequestBody(request, &requestCreate)
+
+	// Ceknik yang samaaa
+	existingUser, err := controller.UserService.FindByNIK(request.Context(), requestCreate.Nikadmin)
+	if err == nil && existingUser != nil {
+		response := dto.ResponseList{
+			Code:    http.StatusBadRequest,
+			Status:  "Bad Request",
+			Message: "NIK sudah terdaftar",
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusBadRequest)
+		util.WriteToResponseBody(writer, response)
+		return
+	}
 
 	responseDTO := controller.UserService.CreateUser(request.Context(), requestCreate)
 	response := dto.ResponseList{
 		Code:    http.StatusOK,
 		Status:  "OK",
 		Data:    responseDTO,
-		Message: "create user successfully",
+		Message: "User berhasil dibuat",
 	}
 
-	writer.Header().Add("Content-Type", "application/json")
+	writer.Header().Set("Content-Type", "application/json")
 	util.WriteToResponseBody(writer, response)
 }
+
 
 func (controller *userControllerImpl) LoginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var loginRequest dto.LoginUserRequest
+    var loginRequest dto.LoginUserRequest
 
-	err := json.NewDecoder(r.Body).Decode(&loginRequest)
-	if err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+    err := json.NewDecoder(r.Body).Decode(&loginRequest)
+    if err != nil {
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest,
+            Status:  "FAILED",
+            Message: "Invalid input",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	token, err := controller.UserService.LoginUser(r.Context(), loginRequest)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+    token, err := controller.UserService.LoginUser(r.Context(), loginRequest)
+    if err != nil {
+        response := dto.ResponseList{
+            Code:    http.StatusUnauthorized,
+            Status:  "FAILED",
+            Message: err.Error(),
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusUnauthorized)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Data:    token,
-		Message: "token generate successfully",
-	}
+    response := dto.ResponseList{
+        Code:    http.StatusOK,
+        Status:  "OK",
+        Data:    token,
+        Message: "Token generated successfully",
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	util.WriteToResponseBody(w, response)
+    w.Header().Set("Content-Type", "application/json")
+    util.WriteToResponseBody(w, response)
 }
 
-func (controller *userControllerImpl) ReadUser(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
-	responseDTO := controller.UserService.ReadUser(request.Context())
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Data:    responseDTO,
-		Message: "read user successfully",
-	}
-
-	writer.Header().Add("Content-Type", "application/json")
-	util.WriteToResponseBody(writer, response)
-}
-
-func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization Header", http.StatusUnauthorized)
+    // log.Println("Authorization Header:", authHeader)
+	if authHeader == "" || len(authHeader) < 8 {
+		http.Error(w, "Missing or Invalid Authorization Header", http.StatusUnauthorized)
 		return
 	}
+
 	tokenString := authHeader[7:]
 	claims := &service.Claims{}
+
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("secret_key"), nil
 	})
@@ -106,8 +113,12 @@ func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http
 		return
 	}
 
-	email := claims.Email
-	userResponse, err := controller.UserService.GetUserInfoByEmail(r.Context(), email)
+	if claims.Nikadmin == "" {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	userResponse, err := controller.UserService.GetUserInfoByNikAdmin(r.Context(), claims.Nikadmin)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -116,139 +127,106 @@ func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http
 	response := dto.ResponseList{
 		Code:    http.StatusOK,
 		Status:  "OK",
-		Data:    userResponse,
-		Message: "success login to user",
+		Data: dto.UserResponse{ 
+			Nikadmin:    userResponse.Nikadmin,
+			Email:       userResponse.Email,
+			NamaLengkap: userResponse.NamaLengkap,
+			Role_id:     userResponse.Role_id,
+		},
+		Message: "Success fetching user information",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	util.WriteToResponseBody(w, response)
 }
+
 
 func (controller *userControllerImpl) ForgotPassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var req dto.ForgotPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	err := controller.UserService.ForgotPassword(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Data:    nil,
-		Message: "Reset link dikirim ke email",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	util.WriteToResponseBody(w, response)
-}
-
-func (controller *userControllerImpl) ResetPassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-    queryParams := r.URL.Query()
-    token := queryParams.Get("token")
-    if token == "" {
-        http.Error(w, "Token tidak ditemukan", http.StatusBadRequest)
-        return
-    }
-
-
-    var req dto.ResetPasswordRequest
+    var req dto.ForgotPasswordRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        http.Error(w, "Invalid request", http.StatusBadRequest)
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest,
+            Status:  "Bad Request",
+            Message: "Invalid request body",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        util.WriteToResponseBody(w, response)
         return
     }
 
-    // Set token ke request DTO
-    req.Token = token
-
-    err := controller.UserService.ResetPassword(req)
+    err := controller.UserService.ForgotPassword(req)
     if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest, 
+            Status:  "Bad Request",
+            Message: err.Error(),
+        }
+        w.Header().Set("Content-Type", "application/json")
+        util.WriteToResponseBody(w, response)
         return
     }
 
     response := dto.ResponseList{
         Code:    http.StatusOK,
         Status:  "OK",
-        Message: "Password berhasil direset",
+        Message: "Reset link dikirim ke email",
+        Data:    nil,
     }
-
     w.Header().Set("Content-Type", "application/json")
     util.WriteToResponseBody(w, response)
 }
 
-func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	// Parse request body
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, "Gagal membaca form data", http.StatusBadRequest)
-		return
-	}
+func (controller *userControllerImpl) ResetPassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+    queryParams := r.URL.Query()
+    token := queryParams.Get("token")
 
-	// data warga body
-	var wargaRequest dto.WargaRequest
-	wargaRequest.NIK = r.FormValue("nik")
-	wargaRequest.NamaLengkap = r.FormValue("nama_lengkap")
-	wargaRequest.Alamat = r.FormValue("alamat")
-	wargaRequest.JenisSurat = r.FormValue("jenis_surat")
-	wargaRequest.Keterangan = r.FormValue("keterangan")
-	wargaRequest.NoHP = r.FormValue("no_hp")
+    if token == "" {
+        response := map[string]interface{}{
+            "code":    http.StatusBadRequest,
+            "status":  "error",
+            "message": "Token tidak ditemukan",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(response)
+        return
+    }
 
-	// ambl file
-	file, handler, err := r.FormFile("file_upload")
-	if err != nil {
-		http.Error(w, "File tidak ditemukan atau salah", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
+    var req dto.ResetPasswordRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        response := map[string]interface{}{
+            "code":    http.StatusBadRequest,
+            "status":  "error",
+            "message": "Request tidak valid",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(response)
+        return
+    }
 
-	// smpn file
-	filePath := fmt.Sprintf("filewarga/%s", handler.Filename)
-	dst, err := os.Create(filePath)
-	if err != nil {
-		http.Error(w, "Gagal menyimpan file", http.StatusInternalServerError)
-		return
-	}
-	defer dst.Close()
+    req.Token = token
+    err := controller.UserService.ResetPassword(req)
+    if err != nil {
+        response := map[string]interface{}{
+            "code":    http.StatusBadRequest,
+            "status":  "error",
+            "message": err.Error(),
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        json.NewEncoder(w).Encode(response)
+        return
+    }
 
-	if _, err := io.Copy(dst, file); err != nil {
-		http.Error(w, "Gagal menyimpan file", http.StatusInternalServerError)
-		return
-	}
+    response := map[string]interface{}{
+        "code":    http.StatusOK,
+        "status":  "ok",
+        "message": "Password berhasil direset",
+    }
 
-	wargaRequest.FileUpload = filePath
-
-	wargaModel := model.Warga{
-		NIK:         wargaRequest.NIK,
-		NamaLengkap: wargaRequest.NamaLengkap,
-		Alamat:      wargaRequest.Alamat,
-		JenisSurat:  wargaRequest.JenisSurat,
-		Keterangan:  wargaRequest.Keterangan,
-		FileUpload:  wargaRequest.FileUpload,
-		NoHP:        wargaRequest.NoHP,
-	}
-
-	// Simpan data
-	err = controller.WargaService.RegisterWarga(wargaModel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Responseeee wargaaa
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Message: "Warga berhasil didaftarkan dan file berhasil diunggah",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	util.WriteToResponseBody(w, response)
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(response)
 }
-
-

@@ -18,9 +18,9 @@ func NewUserRepositoryImpl(db *sql.DB) UserRepository {
 }
 
 func (repository *userRepositoryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error) {
-	query := `INSERT INTO admin(id, email, nikadmin, pass) VALUES(?, ?, ?, ?)`
+	query := `INSERT INTO admin(id, email, nikadmin, namalengkap, role_id, pass) VALUES(?, ?, ?, ?, ?, ?)`
 
-	_, err := tx.ExecContext(ctx, query, user.Id, user.Email, user.Nikadmin, user.Password)
+	_, err := tx.ExecContext(ctx, query, user.Id, user.Email, user.Nikadmin, user.NamaLengkap, user.Role_id, user.Password)
 	util.SentPanicIfError(err)
 
 	return user, nil
@@ -44,7 +44,7 @@ func (repository *userRepositoryImpl) FindById(ctx context.Context, tx *sql.Tx, 
 }
 
 func (repository *userRepositoryImpl) FindByNik(ctx context.Context, tx *sql.Tx, nikadmin string) (model.User, error) {
-	query := `SELECT id, email, nikadmin, pass FROM admin WHERE nikadmin = ?`
+	query := `SELECT id, email, nikadmin, namalengkap, role_id, pass FROM admin WHERE nikadmin = ?`
 
 	rows, err := tx.QueryContext(ctx, query, nikadmin)
 	util.SentPanicIfError(err)
@@ -52,7 +52,7 @@ func (repository *userRepositoryImpl) FindByNik(ctx context.Context, tx *sql.Tx,
 	defer rows.Close()
 	users := model.User{}
 	if rows.Next() {
-		err := rows.Scan(&users.Id, &users.Nikadmin, &users.Email, &users.Password)
+		err := rows.Scan(&users.Id, &users.Email, &users.Nikadmin, &users.NamaLengkap, &users.Role_id, &users.Password)
 		util.SentPanicIfError(err)
 		return users, err
 	} else {
@@ -68,24 +68,6 @@ func (repository *userRepositoryImpl) FindByEmail(email string) (*model.User, er
 		return nil, errors.New("user tidak ditemukan")
 	}
 	return &user, nil
-}
-
-func (repository *userRepositoryImpl) ReadUser(ctx context.Context, tx *sql.Tx) []model.User {
-	query := `SELECT id, nikadmin, email FROM admin`
-
-	rows, err := tx.QueryContext(ctx, query)
-	util.SentPanicIfError(err)
-	defer rows.Close()
-
-	var users []model.User
-	for rows.Next() {
-		user := model.User{}
-		err := rows.Scan(&user.Id, &user.Nikadmin, &user.Email)
-		util.SentPanicIfError(err)
-		users = append(users, user)
-	}
-
-	return users
 }
 
 func (r *userRepositoryImpl) UpdateResetToken(email, token string, expiry time.Time) error {
@@ -108,21 +90,5 @@ func (repository *userRepositoryImpl) FindByResetToken(token string) (*model.Use
 
 func (repository *userRepositoryImpl) UpdatePassword(email, newPassword string) error {
 	_, err := repository.DB.Exec("UPDATE admin SET pass = ?, reset_token = NULL, reset_expiry = NULL WHERE email = ?", newPassword, email)
-	return err
-}
-
-
-type wargaRepositoryImpl struct {
-	db *sql.DB
-}
-
-func NewWargaRepository(db *sql.DB) WargaRepository {
-	return &wargaRepositoryImpl{db: db}
-}
-
-func (r *wargaRepositoryImpl) InsertWarga(warga model.Warga) error {
-	query := `INSERT INTO warga (nik, nama_lengkap, alamat, jenis_surat, keterangan, file_upload, no_hp, created_at, updated_at) 
-			  VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
-	_, err := r.db.Exec(query, warga.NIK, warga.NamaLengkap, warga.Alamat, warga.JenisSurat, warga.Keterangan, warga.FileUpload, warga.NoHP)
 	return err
 }

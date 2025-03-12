@@ -7,6 +7,8 @@ type User struct {
 	Email    	string
 	Nikadmin 	string
 	Password 	string
+	NamaLengkap string
+	Role_id		string
 	ResetToken  string
 	ResetExpiry int64  
 }
