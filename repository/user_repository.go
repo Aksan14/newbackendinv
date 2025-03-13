@@ -8,11 +8,11 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error)
-	FindById(ctx context.Context, tx *sql.Tx, idUser string) (model.User, error)
-	FindByNik(ctx context.Context, tx *sql.Tx, email string) (model.User, error)
-	FindByEmail(email string) (*model.User, error)
-	UpdateResetToken(email, token string, expiry time.Time) error
-	FindByResetToken(token string) (*model.User, error)
-	UpdatePassword(email, newPassword string) error
+    CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error)
+    FindByNik(ctx context.Context, tx *sql.Tx, nikadmin string) (model.User, error)
+    FindByEmail(email string) (*model.User, error)
+    FindByResetToken(token string) (*model.User, error)
+    UpdateResetToken(email, token string, expiry time.Time) error
+    UpdatePassword(email, hashedPass string) error
+    FindRoleById(ctx context.Context, tx *sql.Tx, roleId string) (model.MstRole, error) // Tambahkan metode ini
 }

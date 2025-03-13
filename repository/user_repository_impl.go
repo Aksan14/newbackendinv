@@ -17,10 +17,28 @@ func NewUserRepositoryImpl(db *sql.DB) UserRepository {
 	return &userRepositoryImpl{DB: db}
 }
 
+func (r *userRepositoryImpl) FindRoleById(ctx context.Context, tx *sql.Tx, roleId string) (model.MstRole, error) {
+    query := "SELECT id, name FROM role_admin WHERE id = ?"
+
+    row := tx.QueryRowContext(ctx, query, roleId)
+
+    var role model.MstRole
+    err := row.Scan(&role.IdRole, &role.RoleName)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return model.MstRole{}, errors.New("role tidak ditemukan")
+        }
+        return model.MstRole{}, err
+    }
+
+    return role, nil
+}
+
+
 func (repository *userRepositoryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error) {
 	query := `INSERT INTO admin(id, email, nikadmin, namalengkap, role_id, pass) VALUES(?, ?, ?, ?, ?, ?)`
 
-	_, err := tx.ExecContext(ctx, query, user.Id, user.Email, user.Nikadmin, user.NamaLengkap, user.Role_id, user.Password)
+	_, err := tx.ExecContext(ctx, query, user.Id, user.Email, user.Nikadmin, user.NamaLengkap, user.RoleID, user.Password)
 	util.SentPanicIfError(err)
 
 	return user, nil
@@ -52,7 +70,7 @@ func (repository *userRepositoryImpl) FindByNik(ctx context.Context, tx *sql.Tx,
 	defer rows.Close()
 	users := model.User{}
 	if rows.Next() {
-		err := rows.Scan(&users.Id, &users.Email, &users.Nikadmin, &users.NamaLengkap, &users.Role_id, &users.Password)
+		err := rows.Scan(&users.Id, &users.Email, &users.Nikadmin, &users.NamaLengkap, &users.RoleID, &users.Password)
 		util.SentPanicIfError(err)
 		return users, err
 	} else {

@@ -12,4 +12,6 @@ type UserController interface {
 	GetUserInfo(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	ForgotPassword(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 	ResetPassword(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	DashboardBendahara(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
+	DashboardSekretaris(writer http.ResponseWriter, request *http.Request, params httprouter.Params)
 }

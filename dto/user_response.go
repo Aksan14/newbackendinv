@@ -1,12 +1,12 @@
 package dto
 
 type UserResponse struct {
-	Id			string `json:"id"`
-	Email		string `json:"email"`
-	Nikadmin  	string `json:"nikadmin"`
-	Pass		string `json:"password"`
-	NamaLengkap	string	`json:"namalengkap"`
-	Role_id		string `json:"role_id"`
+    Id         string       `json:"id"`
+    Email      string       `json:"email"`
+    Nikadmin   string       `json:"nikadmin"`
+    Pass       string       `json:"password"`
+    NamaLengkap string      `json:"namalengkap"`
+    Role       RoleResponse `json:"role"` 
 }
 
 type ForgotPasswordResponse struct {

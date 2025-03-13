@@ -12,7 +12,6 @@ import (
 	"godesaapps/repository"
 	"godesaapps/util"
 	"time"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -24,7 +23,6 @@ type userServiceImpl struct {
 	UserRepository repository.UserRepository
 	DB             *sql.DB
 }
-
 
 func (service *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikadmin string) (dto.UserResponse, error) {
 	tx, err := service.DB.BeginTx(ctx, nil)
@@ -38,19 +36,54 @@ func (service *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikad
 		return dto.UserResponse{}, err
 	}
 
+	role, err := service.UserRepository.FindRoleById(ctx, tx, user.RoleID)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return dto.UserResponse{}, err
 	}
 
+	// Konversi role ke dto.RoleResponse
+	roleResponse := dto.RoleResponse{
+		IdRole:   role.IdRole,
+		RoleName: role.RoleName,
+		IsAdmin:  role.IsAdmin,
+	}
+
+	// Kembalikan data user dan role
 	return dto.UserResponse{
 		Id:          user.Id,
 		Email:       user.Email,
 		Nikadmin:    user.Nikadmin,
 		NamaLengkap: user.NamaLengkap,
-		Role_id:     user.Role_id,
+		Role:        roleResponse,
 	}, nil
 }
 
+func (service *userServiceImpl) GetRoleByUserId(ctx context.Context, roleID string) (dto.RoleResponse, error) {
+	tx, err := service.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return dto.RoleResponse{}, err
+	}
+	defer tx.Rollback()
+
+	role, err := service.UserRepository.FindRoleById(ctx, tx, roleID)
+	if err != nil {
+		return dto.RoleResponse{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return dto.RoleResponse{}, err
+	}
+
+	return dto.RoleResponse{
+		IdRole:   role.IdRole,
+		RoleName: role.RoleName,
+		IsAdmin:  role.IsAdmin,
+	}, nil
+}
 
 func NewUserServiceImpl(userRepository repository.UserRepository, db *sql.DB) UserService {
 	return &userServiceImpl{
@@ -80,46 +113,58 @@ func (service *userServiceImpl) CreateUser(ctx context.Context, userRequest dto.
 	util.SentPanicIfError(err)
 
 	user := model.User{
-		Id:       uuid.New().String(),
-		Email:    userRequest.Email,
-		Nikadmin: userRequest.Nikadmin,
-		Password: hashedPass,
+		Id:          uuid.New().String(),
+		Email:       userRequest.Email,
+		Nikadmin:    userRequest.Nikadmin,
+		Password:    hashedPass,
 		NamaLengkap: userRequest.NamaLengkap,
-		Role_id: userRequest.Role_id,
+		RoleID:      userRequest.Role_id,
 	}
 
 	createUser, errSave := service.UserRepository.CreateUser(ctx, tx, user)
 	util.SentPanicIfError(errSave)
 
-	return convertToResponseDTO(createUser)
+	role, err := service.UserRepository.FindRoleById(ctx, tx, user.RoleID)
+	util.SentPanicIfError(err)
+
+	return convertToResponseDTO(createUser, role)
 }
 
-func convertToResponseDTO(user model.User) dto.UserResponse {
+func convertToResponseDTO(user model.User, role model.MstRole) dto.UserResponse {
 	return dto.UserResponse{
-		Id:       user.Id,
-		Email:    user.Email,
-		Nikadmin: user.Nikadmin,
-		Pass:     user.Password,
+		Id:          user.Id,
+		Email:       user.Email,
+		Nikadmin:    user.Nikadmin,
+		NamaLengkap: user.NamaLengkap,
+		Role: dto.RoleResponse{
+			IdRole:   role.IdRole,
+			RoleName: role.RoleName,
+			IsAdmin:  role.IsAdmin,
+		},
 	}
 }
 
 type Claims struct {
+	Nikadmin string `json:"nikadmin"`
 	Email    string `json:"email"`
-	Nikadmin string `json:"nikadmin"` 
+	RoleId   string `json:"role_id"`
 	jwt.StandardClaims
 }
 
-func (service *userServiceImpl) GenerateJWT(email, nikadmin string) (string, error) {
+func (service *userServiceImpl) GenerateJWT(email, nikadmin, roleadmin string) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &Claims{
-		Email: email,
+		Email:    email,
 		Nikadmin: nikadmin,
+		RoleId: roleadmin,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
 			Issuer:    "go-auth-example",
 		},
 	}
+
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return token.SignedString(jwtKey)
@@ -141,7 +186,7 @@ func (service *userServiceImpl) LoginUser(ctx context.Context, loginRequest dto.
 		return "", fmt.Errorf("invalid password")
 	}
 
-	token, err := service.GenerateJWT(user.Email, user.Nikadmin)
+	token, err := service.GenerateJWT(user.Email, user.Nikadmin, user.RoleID)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
@@ -150,46 +195,56 @@ func (service *userServiceImpl) LoginUser(ctx context.Context, loginRequest dto.
 }
 
 func (service *userServiceImpl) FindByNIK(ctx context.Context, nik string) (*dto.UserResponse, error) {
-    tx, err := service.DB.Begin()
-    if err != nil {
-        return nil, err
-    }
-    defer tx.Rollback()
+	tx, err := service.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
 
-    user, err := service.UserRepository.FindByNik(ctx, tx, nik)
-    if err != nil {
-        return nil, err
-    }
+	user, err := service.UserRepository.FindByNik(ctx, tx, nik)
+	if err != nil {
+		return nil, err
+	}
 
-    response := dto.UserResponse{
-        Id:				user.Id,
-        Nikadmin:		user.Nikadmin,
-        Email:			user.Email,
-        Pass:			user.Password,
-    }
-    
-    tx.Commit()
-    return &response, nil
+	// Ambil data role berdasarkan RoleID
+	role, err := service.UserRepository.FindRoleById(ctx, tx, user.RoleID)
+	if err != nil {
+		return nil, err
+	}
+
+	response := dto.UserResponse{
+		Id:          user.Id,
+		Nikadmin:    user.Nikadmin,
+		Email:       user.Email,
+		NamaLengkap: user.NamaLengkap,
+		Role: dto.RoleResponse{
+			IdRole:   role.IdRole,
+			RoleName: role.RoleName,
+			IsAdmin:  role.IsAdmin,
+		},
+	}
+
+	tx.Commit()
+	return &response, nil
 }
 
-
 func (service *userServiceImpl) ForgotPassword(request dto.ForgotPasswordRequest) error {
-    user, err := service.UserRepository.FindByEmail(request.Email)
+	user, err := service.UserRepository.FindByEmail(request.Email)
 	if err != nil {
-        return errors.New("email tidak ditemukan")
-    }
+		return errors.New("email tidak ditemukan")
+	}
 
-    token := generateToken(32)
-    expiry := time.Now().Add(15 * time.Minute)
+	token := generateToken(32)
+	expiry := time.Now().Add(15 * time.Minute)
 
-    err = service.UserRepository.UpdateResetToken(user.Email, token, expiry)
-    if err != nil {
-        return fmt.Errorf("gagal menyimpan token reset: %w", err)
-    }
+	err = service.UserRepository.UpdateResetToken(user.Email, token, expiry)
+	if err != nil {
+		return fmt.Errorf("gagal menyimpan token reset: %w", err)
+	}
 
-    resetURL := fmt.Sprintf("http://localhost:3000/authentication/reset-password?token=%s", token)
-	
-    emailBody := fmt.Sprintf(`
+	resetURL := fmt.Sprintf("http://localhost:3000/authentication/reset-password?token=%s", token)
+
+	emailBody := fmt.Sprintf(`
         <html>
         <body>
             <p>Halo <strong>%s</strong>,</p>
@@ -200,30 +255,30 @@ func (service *userServiceImpl) ForgotPassword(request dto.ForgotPasswordRequest
         </html>
     `, user.Email, resetURL)
 
-    return util.SendEmail(user.Email, "Reset Password", emailBody)
+	return util.SendEmail(user.Email, "Reset Password", emailBody)
 }
 
 func (service *userServiceImpl) ResetPassword(request dto.ResetPasswordRequest) error {
-    if request.Token == "" {
-        return errors.New("token tidak ditemukan")
-    }
+	if request.Token == "" {
+		return errors.New("token tidak ditemukan")
+	}
 
-    user, err := service.UserRepository.FindByResetToken(request.Token)
-    if err != nil {
-        return errors.New("token tidak valid atau sudah kadaluarsa")
-    }
+	user, err := service.UserRepository.FindByResetToken(request.Token)
+	if err != nil {
+		return errors.New("token tidak valid atau sudah kadaluarsa")
+	}
 
-    hashedPass, err := hashPassword(request.Password)
-    if err != nil {
-        return errors.New("gagal mengenkripsi password")
-    }
+	hashedPass, err := hashPassword(request.Password)
+	if err != nil {
+		return errors.New("gagal mengenkripsi password")
+	}
 
-    err = service.UserRepository.UpdatePassword(user.Email, hashedPass)
-    if err != nil {
-        return errors.New("gagal mengubah password")
-    }
+	err = service.UserRepository.UpdatePassword(user.Email, hashedPass)
+	if err != nil {
+		return errors.New("gagal mengubah password")
+	}
 
-    return nil
+	return nil
 }
 
 func generateToken(length int) string {

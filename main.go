@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"godesaapps/config"
 	"godesaapps/controller"
@@ -32,11 +33,16 @@ func main() {
 	router := httprouter.New()
 
 	// user
-	router.POST("/api/user/create", userController.CreateUser)
+	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
-	router.GET("/api/user/me",VerifyJWT(userController.GetUserInfo))
+	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
 	router.POST("/api/user/forgot-password", userController.ForgotPassword)
 	router.POST("/api/user/reset-password", userController.ResetPassword)
+
+	//halaman didalamnya bagi akses berdasarkan role
+	router.GET("/api/user/dashboard-bendahara", VerifyRole(userController.DashboardBendahara, "ROLE001"))
+	router.GET("/api/user/dashboard-sekretaris", VerifyRole(userController.DashboardSekretaris, "ROLE002"))
+	
 
 	// warga
 	router.POST("/api/warga/register", wargaController.RegisterWarga)
@@ -48,7 +54,7 @@ func main() {
 		Handler: handler,
 	}
 
-	// Menjalankan server
+	//serverr
 	errServer := server.ListenAndServe()
 	util.SentPanicIfError(errServer)
 }
@@ -68,7 +74,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
 
 func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -95,6 +100,76 @@ func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 		}
 
 		r.Header.Set("User-Email", claims.Email)
+
 		next(w, r, ps)
 	}
 }
+
+func VerifyRole(next httprouter.Handle, allowedRole string) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization Header", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
+		claims := &service.Claims{}
+
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte("secret_key"), nil
+		})
+
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid atau token expired", http.StatusUnauthorized)
+			return
+		}
+
+		// Debug
+		// fmt.Printf("Decoded Token Claims: %+v\n", claims)
+
+		//cekkk
+		if claims.RoleId != allowedRole {
+			http.Error(w, "Forbidden: tidak dapat mengakses ini role tidak sesuai ", http.StatusForbidden)
+			return
+		}
+
+		// Lanjutkan ke handler jika role sesuai
+		ctx := context.WithValue(r.Context(), nikadminKey, claims.Nikadmin)
+		next(w, r.WithContext(ctx), ps)
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+type contextKey string
+
+const nikadminKey contextKey = "nikadmin"

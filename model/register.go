@@ -8,9 +8,9 @@ type User struct {
 	Nikadmin 	string
 	Password 	string
 	NamaLengkap string
-	Role_id		string
-	ResetToken  string
-	ResetExpiry int64  
+	RoleID		string
+	// ResetToken  string
+	// ResetExpiry int64  
 }
 
 type Warga struct {
