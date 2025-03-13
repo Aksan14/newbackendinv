@@ -5,10 +5,6 @@ API untuk Log-in Log-out Admin desa untuk mengakses Apk Bendahara dan Sekretaris
 ## 🛠 Tech Stack
 
 **Framework & Libraries:**
-- Echo v4 - Web framework untuk menangani HTTP request dengan mudah dan cepat.
-
-- GORM v1.25.5 - ORM (Object Relational Mapping) untuk mempermudah interaksi dengan database.
-
 - Go Validator v10 - Library untuk validasi request secara otomatis.
 
 - Godotenv v1.5.1 - Mengelola environment variables dari file .env.
