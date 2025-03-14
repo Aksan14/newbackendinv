@@ -25,26 +25,122 @@ func NewUserControllerImpl(userService service.UserService) UserController {
 
 //dashboard bendaharaa
 func (controller *userControllerImpl) DashboardBendahara(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Message: "Selamat datang di dashboard Bendahara (ROLE001)",
-	}
+    authHeader := request.Header.Get("Authorization")
+    if authHeader == "" || len(authHeader) < 8 {
+        http.Error(writer, "Missing or Invalid Authorization Header", http.StatusUnauthorized)
+        return
+    }
 
-	writer.Header().Set("Content-Type", "application/json")
-	util.WriteToResponseBody(writer, response)
+    tokenString := authHeader[7:]
+    claims := &service.Claims{}
+
+    token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+        return []byte("secret_key"), nil
+    })
+    if err != nil || !token.Valid {
+        http.Error(writer, "Invalid or Expired Token", http.StatusUnauthorized)
+        return
+    }
+
+    if claims.Nikadmin == "" {
+        http.Error(writer, "Invalid token claims", http.StatusUnauthorized)
+        return
+    }
+
+    userResponse, err := controller.UserService.GetUserInfoByNikAdmin(request.Context(), claims.Nikadmin)
+    if err != nil {
+        http.Error(writer, "User not found", http.StatusNotFound)
+        return
+    }
+
+    role, err := controller.UserService.GetRoleByUserId(request.Context(), userResponse.Role.IdRole)
+    if err != nil {
+        http.Error(writer, "Role not found", http.StatusNotFound)
+        return
+    }
+
+    roleResponse := dto.RoleResponse{
+        IdRole:   role.IdRole,
+        RoleName: role.RoleName,
+    }
+
+    response := dto.ResponseList{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data: dto.UserResponse{
+            Id:          userResponse.Id,
+            Nikadmin:    userResponse.Nikadmin,
+            Email:       userResponse.Email,
+            NamaLengkap: userResponse.NamaLengkap,
+            Role:        roleResponse,
+        },
+        Message: "Selamat datang di dashboard Bendahara (ROLE001)",
+    }
+
+    writer.Header().Set("Content-Type", "application/json")
+    writer.WriteHeader(http.StatusOK)
+    util.WriteToResponseBody(writer, response)
 }
 
+//sekretaris
 func (controller *userControllerImpl) DashboardSekretaris(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
-	response := dto.ResponseList{
-		Code:    http.StatusOK,
-		Status:  "OK",
-		Message: "Selamat datang di dashboard Sekretaris (ROLE002)",
-	}
+    authHeader := request.Header.Get("Authorization")
+    if authHeader == "" || len(authHeader) < 8 {
+        http.Error(writer, "Missing or Invalid Authorization Header", http.StatusUnauthorized)
+        return
+    }
 
-	writer.Header().Set("Content-Type", "application/json")
-	util.WriteToResponseBody(writer, response)
+    tokenString := authHeader[7:]
+    claims := &service.Claims{}
+
+    token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+        return []byte("secret_key"), nil
+    })
+    if err != nil || !token.Valid {
+        http.Error(writer, "Invalid or Expired Token", http.StatusUnauthorized)
+        return
+    }
+
+    if claims.Nikadmin == "" {
+        http.Error(writer, "Invalid token claims", http.StatusUnauthorized)
+        return
+    }
+
+    userResponse, err := controller.UserService.GetUserInfoByNikAdmin(request.Context(), claims.Nikadmin)
+    if err != nil {
+        http.Error(writer, "User not found", http.StatusNotFound)
+        return
+    }
+
+    role, err := controller.UserService.GetRoleByUserId(request.Context(), userResponse.Role.IdRole)
+    if err != nil {
+        http.Error(writer, "Role not found", http.StatusNotFound)
+        return
+    }
+
+    roleResponse := dto.RoleResponse{
+        IdRole:   role.IdRole,
+        RoleName: role.RoleName,
+    }
+
+    response := dto.ResponseList{
+        Code:   http.StatusOK,
+        Status: "OK",
+        Data: dto.UserResponse{
+            Id:          userResponse.Id,
+            Nikadmin:    userResponse.Nikadmin,
+            Email:       userResponse.Email,
+            NamaLengkap: userResponse.NamaLengkap,
+            Role:        roleResponse,
+        },
+        Message: "Selamat datang di dashboard Sekretaris (ROLE002)",
+    }
+
+    writer.Header().Set("Content-Type", "application/json")
+    writer.WriteHeader(http.StatusOK)
+    util.WriteToResponseBody(writer, response)
 }
+
 
 
 func (controller *userControllerImpl) CreateUser(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
@@ -142,10 +238,6 @@ func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http
         return
     }
 
-    // log.Println("Authorization Header:", authHeader)
-    // log.Println("Token JWT:", tokenString)
-    // log.Println("NIK dari token:", claims.Nikadmin)
-
 
     // Ambil data user berdasarkan NIK
     userResponse, err := controller.UserService.GetUserInfoByNikAdmin(r.Context(), claims.Nikadmin)
@@ -164,7 +256,6 @@ func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http
     roleResponse := dto.RoleResponse{
         IdRole:   role.IdRole,
         RoleName: role.RoleName,
-        IsAdmin:  role.IsAdmin,
     }
 
     // Buat respons dengan data user dan role

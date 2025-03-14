@@ -39,7 +39,7 @@ func main() {
 	router.POST("/api/user/forgot-password", userController.ForgotPassword)
 	router.POST("/api/user/reset-password", userController.ResetPassword)
 
-	//halaman didalamnya bagi akses berdasarkan role
+	//bagi akses berdasarkan role
 	router.GET("/api/user/dashboard-bendahara", VerifyRole(userController.DashboardBendahara, "ROLE001"))
 	router.GET("/api/user/dashboard-sekretaris", VerifyRole(userController.DashboardSekretaris, "ROLE002"))
 	

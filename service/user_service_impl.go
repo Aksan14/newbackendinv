@@ -49,7 +49,6 @@ func (service *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikad
 	roleResponse := dto.RoleResponse{
 		IdRole:   role.IdRole,
 		RoleName: role.RoleName,
-		IsAdmin:  role.IsAdmin,
 	}
 
 	// Kembalikan data user dan role
@@ -81,7 +80,6 @@ func (service *userServiceImpl) GetRoleByUserId(ctx context.Context, roleID stri
 	return dto.RoleResponse{
 		IdRole:   role.IdRole,
 		RoleName: role.RoleName,
-		IsAdmin:  role.IsAdmin,
 	}, nil
 }
 
@@ -139,7 +137,6 @@ func convertToResponseDTO(user model.User, role model.MstRole) dto.UserResponse 
 		Role: dto.RoleResponse{
 			IdRole:   role.IdRole,
 			RoleName: role.RoleName,
-			IsAdmin:  role.IsAdmin,
 		},
 	}
 }
@@ -206,7 +203,6 @@ func (service *userServiceImpl) FindByNIK(ctx context.Context, nik string) (*dto
 		return nil, err
 	}
 
-	// Ambil data role berdasarkan RoleID
 	role, err := service.UserRepository.FindRoleById(ctx, tx, user.RoleID)
 	if err != nil {
 		return nil, err
@@ -220,7 +216,6 @@ func (service *userServiceImpl) FindByNIK(ctx context.Context, nik string) (*dto
 		Role: dto.RoleResponse{
 			IdRole:   role.IdRole,
 			RoleName: role.RoleName,
-			IsAdmin:  role.IsAdmin,
 		},
 	}
 

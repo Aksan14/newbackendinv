@@ -4,7 +4,7 @@ type UserResponse struct {
     Id         string       `json:"id"`
     Email      string       `json:"email"`
     Nikadmin   string       `json:"nikadmin"`
-    Pass       string       `json:"password"`
+    // Pass       string       `json:"password"`
     NamaLengkap string      `json:"namalengkap"`
     Role       RoleResponse `json:"role"` 
 }
