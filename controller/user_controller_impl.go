@@ -2,8 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	// "log"
-	// "fmt"
 	"godesaapps/dto"
 	"godesaapps/service"
 	"godesaapps/util"
@@ -74,7 +72,7 @@ func (controller *userControllerImpl) DashboardBendahara(writer http.ResponseWri
             NamaLengkap: userResponse.NamaLengkap,
             Role:        roleResponse,
         },
-        Message: "Selamat datang di dashboard Bendahara (ROLE001)",
+        Message: "Selamat datang di dashboard Bendahara",
     }
 
     writer.Header().Set("Content-Type", "application/json")
@@ -133,7 +131,7 @@ func (controller *userControllerImpl) DashboardSekretaris(writer http.ResponseWr
             NamaLengkap: userResponse.NamaLengkap,
             Role:        roleResponse,
         },
-        Message: "Selamat datang di dashboard Sekretaris (ROLE002)",
+        Message: "Selamat datang di dashboard Sekretaris",
     }
 
     writer.Header().Set("Content-Type", "application/json")

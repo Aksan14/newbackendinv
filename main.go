@@ -43,7 +43,6 @@ func main() {
 	router.GET("/api/user/dashboard-bendahara", VerifyRole(userController.DashboardBendahara, "ROLE001"))
 	router.GET("/api/user/dashboard-sekretaris", VerifyRole(userController.DashboardSekretaris, "ROLE002"))
 	
-
 	// warga
 	router.POST("/api/warga/register", wargaController.RegisterWarga)
 
@@ -105,7 +104,7 @@ func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func VerifyRole(next httprouter.Handle, allowedRole string) httprouter.Handle {
+func VerifyRole(next httprouter.Handle, allowedRoles ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -127,49 +126,33 @@ func VerifyRole(next httprouter.Handle, allowedRole string) httprouter.Handle {
 
 		// Debug
 		// fmt.Printf("Decoded Token Claims: %+v\n", claims)
-
-		//cekkk
-		if claims.RoleId != allowedRole {
-			http.Error(w, "Forbidden: tidak dapat mengakses ini role tidak sesuai ", http.StatusForbidden)
+		
+		if !isRoleAllowed(claims.RoleId, allowedRoles) {
+			http.Error(w, "Forbidden: tidak dapat mengakses ini, role tidak sesuai", http.StatusForbidden)
 			return
 		}
 
-		// Lanjutkan ke handler jika role sesuai
+		type contextKey string
+		const nikadminKey contextKey = "nikadmin"
+
 		ctx := context.WithValue(r.Context(), nikadminKey, claims.Nikadmin)
 		next(w, r.WithContext(ctx), ps)
 	}
 }
 
+func isRoleAllowed(userRole string, allowedRoles []string) bool {
+	// Rolesuper ccnt
+	const superRole = "ROLE000"
 
+	// ROLE000 langsung beri akses
+	if userRole == superRole {
+		return true
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type contextKey string
-
-const nikadminKey contextKey = "nikadmin"
+	for _, role := range allowedRoles {
+		if userRole == role {
+			return true
+		}
+	}
+	return false
+}
