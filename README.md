@@ -21,6 +21,43 @@ API untuk Log-in Log-out Admin desa untuk mengakses Apk Bendahara dan Sekretaris
 
 - filippo.io/edwards25519 v1.1.0 - Library untuk implementasi algoritma Edwards25519.
 
+DB_HOST=localhost   
+# Alamat host database, dalam hal ini database berjalan di mesin lokal.  
+
+DB_PORT=3306     
+# Port yang digunakan oleh database MySQL (default: 3306).  
+
+DB_USER=root  
+# Nama pengguna yang digunakan untuk mengakses database.  
+
+DB_PASSWORD=haha123  
+# Kata sandi untuk autentikasi pengguna database.  
+
+DB_NAME=  
+# Nama database yang digunakan oleh aplikasi.  
+
+APP_PORT=
+# Port tempat aplikasi web berbasis Go berjalan.  
+
+SMTP_EMAIL= 
+# Alamat email yang digunakan untuk mengirim email melalui SMTP.  
+
+SMTP_PASSWORD=  
+# Kata sandi atau kode autentikasi SMTP untuk mengirim email.  
+
+SMTP_HOST=smtp.gmail.com  
+# Alamat server SMTP untuk mengirim email melalui Gmail.  
+
+SMTP_PORT=587  
+# Port yang digunakan untuk komunikasi dengan server SMTP Gmail (587 untuk TLS).  
+
+ALLOWED_ORIGIN=http://localhost:3000, * untuk mengizinkan tanpa terkecuali
+# Domain yang diizinkan untuk mengakses API (digunakan dalam konfigurasi CORS).  
+
+BASE_URL=localhost:3000  
+# URL dasar aplikasi frontend yang digunakan untuk membentuk link dalam email.  
+
+
 **Database:**
 - MySQL
 
