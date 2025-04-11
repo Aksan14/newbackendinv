@@ -9,6 +9,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -22,14 +24,13 @@ func NewWargaController(wargaService service.WargaService) WargaController {
 	}
 }
 
+// ========== Controller Register Warga dengan file upload ==========
 func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Gagal membaca form data", http.StatusBadRequest)
 		return
 	}
 
-	// data warga body
 	var wargaRequest dto.WargaRequest
 	wargaRequest.NIK = r.FormValue("nik")
 	wargaRequest.NamaLengkap = r.FormValue("nama_lengkap")
@@ -38,7 +39,6 @@ func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *h
 	wargaRequest.Keterangan = r.FormValue("keterangan")
 	wargaRequest.NoHP = r.FormValue("no_hp")
 
-	// ambl file
 	file, handler, err := r.FormFile("file_upload")
 	if err != nil {
 		http.Error(w, "File tidak ditemukan atau salah", http.StatusBadRequest)
@@ -46,7 +46,6 @@ func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *h
 	}
 	defer file.Close()
 
-	// smpn file
 	filePath := fmt.Sprintf("filewarga/%s", handler.Filename)
 	dst, err := os.Create(filePath)
 	if err != nil {
@@ -55,7 +54,7 @@ func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *h
 	}
 	defer dst.Close()
 
-	if _, err := io.Copy(dst, file); err != nil {
+	if _, err = io.Copy(dst, file); err != nil {
 		http.Error(w, "Gagal menyimpan file", http.StatusInternalServerError)
 		return
 	}
@@ -72,20 +71,111 @@ func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *h
 		NoHP:        wargaRequest.NoHP,
 	}
 
-	// Simpan data
-	err = controller.WargaService.RegisterWarga(wargaModel)
-	if err != nil {
+	if err = controller.WargaService.RegisterWarga(wargaModel); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Responseeee wargaaa
 	response := dto.ResponseList{
 		Code:    http.StatusOK,
 		Status:  "OK",
 		Message: "Warga berhasil didaftarkan dan file berhasil diunggah",
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	util.WriteToResponseBody(w, response)
+}
+
+func (controller *wargaControllerImpl) InsertDataWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	var warga model.DataWarga
+
+	if err := util.ReadFromRequestBody(r, &warga); err != nil {
+		http.Error(w, "Data tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if err := controller.WargaService.InsertDataWarga(warga); err != nil {
+		http.Error(w, "Gagal menyimpan data warga", http.StatusInternalServerError)
+		return
+	}
+
+	response := dto.ResponseList{
+		Code:    http.StatusCreated,
+		Status:  "Created",
+		Message: "Data warga berhasil ditambahkan",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	util.WriteToResponseBody(w, response)
+}
+
+// ========== Controller Get All Warga ==========
+func (controller *wargaControllerImpl) GetAllWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	wargas, err := controller.WargaService.GetAllWarga()
+	if err != nil {
+		http.Error(w, "Gagal mengambil data warga", http.StatusInternalServerError)
+		return
+	}
+
+	response := dto.ResponseList{
+		Code:    http.StatusOK,
+		Status:  "OK",
+		Message: "Data warga ditemukan",
+		Data:    wargas,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	util.WriteToResponseBody(w, response)
+}
+
+// ========== Controller Update Data Warga ==========
+func (controller *wargaControllerImpl) UpdateWarga(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	idStr := params.ByName("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	var warga model.DataWarga
+	if err := util.ReadFromRequestBody(r, &warga); err != nil {
+		http.Error(w, "Data tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if err := controller.WargaService.UpdateWarga(id, warga); err != nil {
+		http.Error(w, "Gagal update data", http.StatusInternalServerError)
+		return
+	}
+
+	response := dto.ResponseList{
+		Code:    http.StatusOK,
+		Status:  "OK",
+		Message: "Data berhasil diperbarui",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	util.WriteToResponseBody(w, response)
+}
+
+// ========== Controller Delete Data Warga ==========
+func (controller *wargaControllerImpl) DeleteWarga(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	idStr := params.ByName("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "ID tidak valid", http.StatusBadRequest)
+		return
+	}
+
+	if err := controller.WargaService.DeleteWarga(id); err != nil {
+		http.Error(w, "Gagal hapus data", http.StatusInternalServerError)
+		return
+	}
+
+	response := dto.ResponseList{
+		Code:    http.StatusOK,
+		Status:  "OK",
+		Message: "Data warga berhasil dihapus",
+	}
 	w.Header().Set("Content-Type", "application/json")
 	util.WriteToResponseBody(w, response)
 }

@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"godesaapps/model"
 )
 
 type RoleRepository interface {
-    FindMstRole(ctx context.Context, roleId string) (model.MstRole, error)
-    FindAdminRole(ctx context.Context) (model.MstRole, error)
+	FindRoleById(ctx context.Context, tx *sql.Tx, roleId string) (model.MstRole, error)
 }

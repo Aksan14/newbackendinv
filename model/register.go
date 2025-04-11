@@ -26,3 +26,15 @@ type Warga struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
+type DataWarga struct {
+	ID           int    `json:"id"`
+	NIK          string `json:"nik"`
+	NamaLengkap  string `json:"nama_lengkap"`
+	TempatLahir  string `json:"tempat_lahir"`
+	TanggalLahir string `json:"tanggal_lahir"`
+	JenisKelamin string `json:"jenis_kelamin"`
+	Pendidikan   string `json:"pendidikan"`
+	Pekerjaan    string `json:"pekerjaan"`
+}
+
+

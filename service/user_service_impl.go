@@ -11,9 +11,7 @@ import (
 	"godesaapps/model"
 	"godesaapps/repository"
 	"godesaapps/util"
-	"os"
 	"time"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -47,13 +45,11 @@ func (service *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikad
 		return dto.UserResponse{}, err
 	}
 
-	// Konversi role ke dto.RoleResponse
 	roleResponse := dto.RoleResponse{
 		IdRole:   role.IdRole,
 		RoleName: role.RoleName,
 	}
 
-	// Kembalikan data user dan role
 	return dto.UserResponse{
 		Id:          user.Id,
 		Email:       user.Email,
@@ -144,22 +140,24 @@ func convertToResponseDTO(user model.User, role model.MstRole) dto.UserResponse 
 }
 
 type Claims struct {
-	Nikadmin string `json:"nikadmin"`
-	Email    string `json:"email"`
-	RoleId   string `json:"role_id"`
+	Nikadmin 	string `json:"nikadmin"`
+	Email    	string `json:"email"`
+	RoleId   	string `json:"role_id"`
+	NamaLengkap string `json:"namalengkap"`
 	jwt.StandardClaims
 }
 
-func (service *userServiceImpl) GenerateJWT(email, nikadmin, roleadmin string) (string, error) {
+func (service *userServiceImpl) GenerateJWT(email, nikadmin,namalengkap, roleadmin string) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 
 	claims := &Claims{
 		Email:    email,
 		Nikadmin: nikadmin,
 		RoleId: roleadmin,
+		NamaLengkap: namalengkap,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
-			Issuer:    "go-auth-example",
+			Issuer:    "go-auth-invdes",
 		},
 	}
 
@@ -185,7 +183,7 @@ func (service *userServiceImpl) LoginUser(ctx context.Context, loginRequest dto.
 		return "", fmt.Errorf("invalid password")
 	}
 
-	token, err := service.GenerateJWT(user.Email, user.Nikadmin, user.RoleID)
+	token, err := service.GenerateJWT(user.Email, user.Nikadmin, user.RoleID, user.NamaLengkap)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
@@ -239,8 +237,7 @@ func (service *userServiceImpl) ForgotPassword(request dto.ForgotPasswordRequest
 		return fmt.Errorf("gagal menyimpan token reset: %w", err)
 	}
 
-	baseURL := os.Getenv("BASE_URL")
-	resetURL := fmt.Sprintf("%s/authentication/reset-password?token=%s", baseURL, token)
+	resetURL := fmt.Sprintf("http://localhost:3000/authentication/reset-password?token=%s", token)
 
 	emailBody := fmt.Sprintf(`
         <html>

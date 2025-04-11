@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"godesaapps/config"
 	"godesaapps/controller"
@@ -19,33 +18,49 @@ import (
 func main() {
 	fmt.Println("DesaApps Runn...")
 
-	mysql, err := config.ConnectToDatabase()
+	db, err := config.ConnectToDatabase()
 	util.SentPanicIfError(err)
 
-	userRepository := repository.NewUserRepositoryImpl(mysql)
-	wargaRepository := repository.NewWargaRepository(mysql)
+	userRepository := repository.NewUserRepositoryImpl(db)
+	wargaRepository := repository.NewWargaRepository(db)
+	contentRepository := repository.NewWebsiteContentRepository(db)
 
-	userService := service.NewUserServiceImpl(userRepository, mysql)
+	userService := service.NewUserServiceImpl(userRepository, db)
 	wargaService := service.NewWargaService(wargaRepository)
+	contentService := service.NewWebsiteContentService(contentRepository)
 
 	userController := controller.NewUserControllerImpl(userService)
 	wargaController := controller.NewWargaController(wargaService)
+	contentController := controller.NewWebsiteContentController(contentService)
 
 	router := httprouter.New()
 
-	// user
+	// User routes
 	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
 	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
 	router.POST("/api/user/forgot-password", userController.ForgotPassword)
 	router.POST("/api/user/reset-password", userController.ResetPassword)
 
-	//bagi akses berdasarkan role
-	router.GET("/api/user/dashboard-bendahara", VerifyRole(userController.DashboardBendahara, "ROLE001"))
-	router.GET("/api/user/dashboard-sekretaris", VerifyRole(userController.DashboardSekretaris, "ROLE002"))
-	
-	// warga
+	// Warga routes
 	router.POST("/api/warga/register", wargaController.RegisterWarga)
+	router.POST("/api/warga", wargaController.InsertDataWarga)
+	router.GET("/api/warga", wargaController.GetAllWarga)
+	router.PUT("/api/warga/:id", wargaController.UpdateWarga)
+	router.DELETE("/api/warga/:id", wargaController.DeleteWarga)
+
+	// Website content routes
+	router.GET("/api/content", contentController.GetContent)
+	router.PUT("/api/content", contentController.UpdateContent)
+
+
+	//dashboard statss
+	dashboardRepository := repository.NewDashboardRepository(db)
+	dashboardService := service.NewDashboardService(dashboardRepository)
+	dashboardController := controller.NewDashboardController(dashboardService)
+
+	router.GET("/api/dashboard/stats", dashboardController.GetStats)
+
 
 	handler := corsMiddleware(router)
 
@@ -54,19 +69,22 @@ func main() {
 		Handler: handler,
 	}
 
-	//serverr
 	errServer := server.ListenAndServe()
 	util.SentPanicIfError(errServer)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
-		if allowedOrigin == "" {
-			allowedOrigin = "*" 
+		origin := r.Header.Get("Origin")
+		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGIN"), ",")
+
+		for _, o := range allowedOrigins {
+			if strings.TrimSpace(o) == origin {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -79,6 +97,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
 
 func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -105,60 +124,6 @@ func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 		}
 
 		r.Header.Set("User-Email", claims.Email)
-
 		next(w, r, ps)
 	}
-}
-
-func VerifyRole(next httprouter.Handle, allowedRoles ...string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Missing Authorization Header", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
-		claims := &service.Claims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("secret_key"), nil
-		})
-
-		if err != nil || !token.Valid {
-			http.Error(w, "Invalid atau token expired", http.StatusUnauthorized)
-			return
-		}
-
-		// Debug
-		// fmt.Printf("Decoded Token Claims: %+v\n", claims)
-		
-		if !isRoleAllowed(claims.RoleId, allowedRoles) {
-			http.Error(w, "Forbidden: tidak dapat mengakses ini, role tidak sesuai", http.StatusForbidden)
-			return
-		}
-
-		type contextKey string
-		const nikadminKey contextKey = "nikadmin"
-
-		ctx := context.WithValue(r.Context(), nikadminKey, claims.Nikadmin)
-		next(w, r.WithContext(ctx), ps)
-	}
-}
-
-func isRoleAllowed(userRole string, allowedRoles []string) bool {
-	// Rolesuper ccnt
-	const superRole = "ROLE000"
-
-	// ROLE000 langsung beri akses
-	if userRole == superRole {
-		return true
-	}
-
-	for _, role := range allowedRoles {
-		if userRole == role {
-			return true
-		}
-	}
-	return false
 }
