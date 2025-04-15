@@ -95,9 +95,14 @@ func (controller *wargaControllerImpl) InsertDataWarga(w http.ResponseWriter, r 
 	}
 
 	if err := controller.WargaService.InsertDataWarga(warga); err != nil {
-		http.Error(w, "Gagal menyimpan data warga", http.StatusInternalServerError)
+		if err.Error() == "NIK sudah terdaftar" {
+			http.Error(w, err.Error(), http.StatusConflict)
+		} else {
+			http.Error(w, "Gagal menyimpan data warga", http.StatusInternalServerError)
+		}
 		return
 	}
+	
 
 	response := dto.ResponseList{
 		Code:    http.StatusCreated,
@@ -143,11 +148,13 @@ func (controller *wargaControllerImpl) UpdateWarga(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Proses update data warga
 	if err := controller.WargaService.UpdateWarga(id, warga); err != nil {
 		http.Error(w, "Gagal update data", http.StatusInternalServerError)
 		return
 	}
 
+	// Response sukses
 	response := dto.ResponseList{
 		Code:    http.StatusOK,
 		Status:  "OK",
@@ -156,6 +163,7 @@ func (controller *wargaControllerImpl) UpdateWarga(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	util.WriteToResponseBody(w, response)
 }
+
 
 // ========== Controller Delete Data Warga ==========
 func (controller *wargaControllerImpl) DeleteWarga(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

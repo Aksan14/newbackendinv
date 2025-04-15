@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"godesaapps/dto"
+	"godesaapps/model"
 )
 
 type UserService interface {
@@ -13,6 +14,8 @@ type UserService interface {
     FindByNIK(ctx context.Context, nik string) (*dto.UserResponse, error)
     ForgotPassword(request dto.ForgotPasswordRequest) error
     ResetPassword(request dto.ResetPasswordRequest) error
-    GetRoleByUserId(ctx context.Context, roleID string) (dto.RoleResponse, error) 
+    GetRoleByUserId(ctx context.Context, roleID string) (dto.RoleResponse, error)
+    GetAllUsers(ctx context.Context) ([]model.User, error)
+    DeleteUser(ctx context.Context, id string) error
 }
 

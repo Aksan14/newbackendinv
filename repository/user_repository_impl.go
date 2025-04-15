@@ -17,6 +17,41 @@ func NewUserRepositoryImpl(db *sql.DB) UserRepository {
 	return &userRepositoryImpl{DB: db}
 }
 
+func (repository *userRepositoryImpl) GetAllUsers(ctx context.Context) ([]model.User, error) {
+	query := `SELECT id, email, nikadmin, namalengkap, role_id FROM admin`
+
+	rows, err := repository.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var user model.User
+		err := rows.Scan(&user.Id, &user.Email, &user.Nikadmin, &user.NamaLengkap, &user.RoleID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Mask password
+		user.Password = "********"
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+
+func (repository *userRepositoryImpl) DeleteUserByID(ctx context.Context, id string) error {
+	query := "DELETE FROM admin WHERE id = ?"
+	_, err := repository.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (repository *userRepositoryImpl) CreateUser(ctx context.Context, tx *sql.Tx, user model.User) (model.User, error) {
 	query := `INSERT INTO admin(id, email, nikadmin, namalengkap, role_id, pass) VALUES(?, ?, ?, ?, ?, ?)`
 

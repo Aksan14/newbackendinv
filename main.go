@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 )
@@ -35,24 +34,26 @@ func main() {
 
 	router := httprouter.New()
 
-	// User routes
+	// User route
 	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
 	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
 	router.POST("/api/user/forgot-password", userController.ForgotPassword)
 	router.POST("/api/user/reset-password", userController.ResetPassword)
+	router.GET("/api/users", userController.GetAllUsers)
+	router.DELETE("/api/deleteusers/:id", userController.DeleteUserHandler)
 
-	// Warga routes
+	// Warga route
 	router.POST("/api/warga/register", wargaController.RegisterWarga)
 	router.POST("/api/warga", wargaController.InsertDataWarga)
 	router.GET("/api/warga", wargaController.GetAllWarga)
 	router.PUT("/api/warga/:id", wargaController.UpdateWarga)
 	router.DELETE("/api/warga/:id", wargaController.DeleteWarga)
 
-	// Website content routes
+	// Website content route
 	router.GET("/api/content", contentController.GetContent)
 	router.PUT("/api/content", contentController.UpdateContent)
-
+	router.ServeFiles("/kontenwebsite/*filepath", http.Dir("./kontenwebsite"))
 
 	//dashboard statss
 	dashboardRepository := repository.NewDashboardRepository(db)

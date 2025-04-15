@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"godesaapps/model"
 )
 
@@ -24,7 +25,8 @@ func (r *websiteContentRepository) GetContent() (*model.WebsiteContent, error) {
 }
 
 func (r *websiteContentRepository) UpdateContent(data *model.WebsiteContent) error {
-	_, err := r.db.Exec(`
+	// Menjalankan query UPDATE
+	result, err := r.db.Exec(`
 		UPDATE website_content SET 
 			logo = ?, 
 			title = ?, 
@@ -41,5 +43,23 @@ func (r *websiteContentRepository) UpdateContent(data *model.WebsiteContent) err
 		data.Phone,
 		data.ID,
 	)
-	return err
+	
+	// Jika ada error dalam eksekusi query
+	if err != nil {
+		return err
+	}
+
+	// Mengecek berapa banyak baris yang diupdate
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// Jika tidak ada baris yang terpengaruh (misalnya id tidak ditemukan)
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows updated, mungkin id tidak ditemukan")
+	}
+
+	return nil
 }
+

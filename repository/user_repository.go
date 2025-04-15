@@ -14,5 +14,8 @@ type UserRepository interface {
     FindByResetToken(token string) (*model.User, error)
     UpdateResetToken(email, token string, expiry time.Time) error
     UpdatePassword(email, hashedPass string) error
-    FindRoleById(ctx context.Context, tx *sql.Tx, roleId string) (model.MstRole, error) // Tambahkan metode ini
+    FindRoleById(ctx context.Context, tx *sql.Tx, roleId string) (model.MstRole, error) 
+    GetAllUsers(ctx context.Context) ([]model.User, error)
+	DeleteUserByID(ctx context.Context, id string) error
+    
 }

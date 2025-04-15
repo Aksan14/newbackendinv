@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"godesaapps/model"
 	"godesaapps/repository"
 )
@@ -23,8 +24,17 @@ func (s *wargaServiceImpl) RegisterWarga(warga model.Warga) error {
 }
 
 func (s *wargaServiceImpl) InsertDataWarga(warga model.DataWarga) error {
+	existing, err := s.repo.FindByNIK(warga.NIK)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		return fmt.Errorf("NIK sudah terdaftar")
+	}
+
 	return s.repo.InsertDataWarga(warga)
 }
+
 
 func (s *wargaServiceImpl) GetAllWarga() ([]model.DataWarga, error) {
 	return s.repo.GetAllWarga()

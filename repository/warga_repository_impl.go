@@ -21,13 +21,19 @@ func (r *wargaRepositoryImpl) InsertWarga(warga model.Warga) error {
 }
 
 func (r *wargaRepositoryImpl) InsertDataWarga(w model.DataWarga) error {
-	_, err := r.db.Exec("INSERT INTO datawarga (nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan)
+	_, err := r.db.Exec(`
+		INSERT INTO datawarga 
+		(nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan,
+	)
 	return err
 }
 
 func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
-	rows, err := r.db.Query("SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan FROM datawarga")
+	rows, err := r.db.Query(`
+		SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan 
+		FROM datawarga`)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +42,10 @@ func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 	var wargas []model.DataWarga
 	for rows.Next() {
 		var warga model.DataWarga
-		err := rows.Scan(&warga.ID, &warga.NIK, &warga.NamaLengkap, &warga.TempatLahir, &warga.TanggalLahir, &warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan)
+		err := rows.Scan(
+			&warga.ID, &warga.NIK, &warga.NamaLengkap, &warga.TempatLahir, &warga.TanggalLahir,
+			&warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan, &warga.Agama, &warga.StatusPernikahan, &warga.Kewarganegaraan,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -45,14 +54,28 @@ func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 	return wargas, nil
 }
 
-
 func (r *wargaRepositoryImpl) UpdateWarga(id int, w model.DataWarga) error {
-	_, err := r.db.Exec("UPDATE datawarga SET nik=?, nama_lengkap=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, pendidikan=?, pekerjaan=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, id)
+	_, err := r.db.Exec("UPDATE datawarga SET nik=?, nama_lengkap=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, pendidikan=?, pekerjaan=?, agama=?, status_pernikahan=?, kewarganegaraan=? WHERE id=?",
+		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan, id)
 	return err
 }
+
+func (r *wargaRepositoryImpl) FindByNIK(nik string) (*model.DataWarga, error) {
+	row := r.db.QueryRow("SELECT id, nik FROM datawarga WHERE nik = ?", nik)
+
+	var warga model.DataWarga
+	err := row.Scan(&warga.ID, &warga.NIK)
+	if err == sql.ErrNoRows {
+		return nil, nil 
+	} else if err != nil {
+		return nil, err
+	}
+	return &warga, nil
+}
+
 
 func (r *wargaRepositoryImpl) DeleteWarga(id int) error {
 	_, err := r.db.Exec("DELETE FROM datawarga WHERE id=?", id)
 	return err
 }
+
