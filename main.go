@@ -17,6 +17,7 @@ import (
 func main() {
 	fmt.Println("DesaApps Runn...")
 
+	// Database connection
 	db, err := config.ConnectToDatabase()
 	util.SentPanicIfError(err)
 
@@ -34,7 +35,7 @@ func main() {
 
 	router := httprouter.New()
 
-	// User route
+	// Define routes
 	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
 	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
@@ -43,25 +44,32 @@ func main() {
 	router.GET("/api/users", userController.GetAllUsers)
 	router.DELETE("/api/deleteusers/:id", userController.DeleteUserHandler)
 
-	// Warga route
 	router.POST("/api/warga/register", wargaController.RegisterWarga)
 	router.POST("/api/warga", wargaController.InsertDataWarga)
 	router.GET("/api/warga", wargaController.GetAllWarga)
 	router.PUT("/api/warga/:id", wargaController.UpdateWarga)
 	router.DELETE("/api/warga/:id", wargaController.DeleteWarga)
 
-	// Website content route
 	router.GET("/api/content", contentController.GetContent)
 	router.PUT("/api/content", contentController.UpdateContent)
 	router.ServeFiles("/kontenwebsite/*filepath", http.Dir("./kontenwebsite"))
 
-	//dashboard statss
+	// Dashboard stats
 	dashboardRepository := repository.NewDashboardRepository(db)
 	dashboardService := service.NewDashboardService(dashboardRepository)
 	dashboardController := controller.NewDashboardController(dashboardService)
 
 	router.GET("/api/dashboard/stats", dashboardController.GetStats)
 
+	// Inisialisasi repository, service, dan controller permintaan surat
+	requestSuratRepo := repository.NewRequestSuratRepository(db)
+	requestSuratService := service.NewRequestSuratService(requestSuratRepo)
+	requestSuratController := controller.NewRequestSuratController(requestSuratService)
+
+	// Routes untuk permintaan surat
+	router.GET("/api/request/warga/:nik", requestSuratController.FindWargaByNik)
+	router.POST("/api/request/surat", requestSuratController.CreateRequestSurat)
+		
 
 	handler := corsMiddleware(router)
 
@@ -99,7 +107,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-
 func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		authHeader := r.Header.Get("Authorization")
@@ -116,7 +123,7 @@ func VerifyJWT(next httprouter.Handle) httprouter.Handle {
 
 		claims := &service.Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("secret_key"), nil
+			return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 		})
 
 		if err != nil || !token.Valid {

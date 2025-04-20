@@ -9,8 +9,8 @@ type User struct {
 	Password 	string
 	NamaLengkap string
 	RoleID		string
-	// ResetToken  string
-	// ResetExpiry int64  
+	ResetToken  string
+	ResetExpiry int64  
 }
 
 type Warga struct {
@@ -38,6 +38,7 @@ type DataWarga struct {
 	Agama				string `json:"agama"`
 	StatusPernikahan	string `json:"status_pernikahan"`
 	Kewarganegaraan		string `json:"kewarganegaraan"`
+	Alamat           	string `json:"alamat"`
 }
 
 
