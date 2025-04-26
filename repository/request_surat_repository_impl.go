@@ -38,70 +38,74 @@ func (r *requestSuratRepositoryImpl) FindByNik(nik string) (*model.DataWarga, er
 }
 
 func (r *requestSuratRepositoryImpl) FindDataWargaByNIK(nik string) (*model.DataWarga, error) {
-    query := `SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan,
-              pekerjaan, agama, status_pernikahan, kewarganegaraan, alamat FROM datawarga WHERE nik = ?`
+	query := `SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan,
+			  pekerjaan, agama, status_pernikahan, kewarganegaraan, alamat FROM datawarga WHERE nik = ?`
 
-    row := r.db.QueryRow(query, nik)
+	row := r.db.QueryRow(query, nik)
 
-    var warga model.DataWarga
-    err := row.Scan(
-        &warga.ID,
-        &warga.NIK,
-        &warga.NamaLengkap,
-        &warga.TempatLahir,
-        &warga.TanggalLahir,
-        &warga.JenisKelamin,
-        &warga.Pendidikan,
-        &warga.Pekerjaan,
-        &warga.Agama,
-        &warga.StatusPernikahan,
-        &warga.Kewarganegaraan,
-        &warga.Alamat,
-    )
+	var warga model.DataWarga
+	err := row.Scan(
+		&warga.ID,
+		&warga.NIK,
+		&warga.NamaLengkap,
+		&warga.TempatLahir,
+		&warga.TanggalLahir,
+		&warga.JenisKelamin,
+		&warga.Pendidikan,
+		&warga.Pekerjaan,
+		&warga.Agama,
+		&warga.StatusPernikahan,
+		&warga.Kewarganegaraan,
+	)
 
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, nil
-        }
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return &warga, nil
+	return &warga, nil
 }
 
 func (r *requestSuratRepositoryImpl) InsertRequestSurat(req model.RequestSuratWarga) error {
-    query := `INSERT INTO requestsuratwarga (
-        id_warga, jenis_surat, nik, nama_lengkap, tempat_lahir, 
-        tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, 
-        status_pernikahan, kewarganegaraan, alamat, penghasilan, 
-        lama_tinggal, nama_usaha, jenis_usaha, alamat_usaha,
-        alamat_tujuan, alasan_pindah, keperluan_pindah, tujuan_pindah
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO requestsuratwarga (
+		id_warga, jenis_surat,
+		nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan,
+		pekerjaan, agama, status_pernikahan, kewarganegaraan, alamat,
+		penghasilan, lama_tinggal, nama_usaha, jenis_usaha, alamat_usaha,
+		alamat_tujuan, alasan_pindah, keperluan_pindah, tujuan_pindah
+	) VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-    _, err := r.db.Exec(query,
-        req.IDWarga,
-        req.JenisSurat,
-        req.NIK,
-        req.NamaLengkap,
-        req.TempatLahir,
-        req.TanggalLahir,
-        req.JenisKelamin,
-        req.Pendidikan,
-        req.Pekerjaan,
-        req.Agama,
-        req.StatusPernikahan,
-        req.Kewarganegaraan,
-        req.Alamat,
-        req.Penghasilan,
-        req.LamaTinggal,
-        req.NamaUsaha,
-        req.JenisUsaha,
-        req.AlamatUsaha,
-        req.AlamatTujuan,
-        req.AlasanPindah,
-        req.KeperluanPindah,
-        req.TujuanPindah,
-    )
+	_, err := r.db.Exec(query,
+		req.IDWarga,        
+		req.JenisSurat,     
+		req.Status,         
+		req.NomorSurat,     
+		req.Keterangan,     
+		req.TanggalSelesai, 
 
-    return err
+		req.NIK,            
+		req.NamaLengkap,    
+		req.TempatLahir,    
+		req.TanggalLahir,   
+		req.JenisKelamin,   
+		req.Pendidikan,     
+		req.Pekerjaan,      
+		req.Agama,          
+		req.StatusPernikahan,
+		req.Kewarganegaraan,
+		req.Alamat,         
+
+		req.Penghasilan,    
+		req.LamaTinggal,    
+		req.NamaUsaha,      
+		req.JenisUsaha,     
+		req.AlamatUsaha,    
+
+		req.AlamatTujuan,   
+		req.AlasanPindah,   
+		req.KeperluanPindah,
+		req.TujuanPindah,   
+	)
+
+	return err
 }
+

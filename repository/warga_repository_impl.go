@@ -32,7 +32,7 @@ func (r *wargaRepositoryImpl) InsertDataWarga(w model.DataWarga) error {
 
 func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 	rows, err := r.db.Query(`
-		SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan 
+		SELECT id, nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan, alamat
 		FROM datawarga`)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 		var warga model.DataWarga
 		err := rows.Scan(
 			&warga.ID, &warga.NIK, &warga.NamaLengkap, &warga.TempatLahir, &warga.TanggalLahir,
-			&warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan, &warga.Agama, &warga.StatusPernikahan, &warga.Kewarganegaraan,
+			&warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan, &warga.Agama, &warga.StatusPernikahan, &warga.Kewarganegaraan, &warga.Alamat,
 		)
 		if err != nil {
 			return nil, err

@@ -35,6 +35,13 @@ func main() {
 
 	router := httprouter.New()
 
+
+	adminRepo := repository.NewAdminRepository(db)
+	adminService := service.NewAdminService(adminRepo)
+	adminController := controller.NewAdminController(adminService)
+
+	router.POST("/api/admin/create", adminController.CreateAdminFromPegawai)
+
 	// Define routes
 	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
@@ -61,14 +68,29 @@ func main() {
 
 	router.GET("/api/dashboard/stats", dashboardController.GetStats)
 
-	// Inisialisasi repository, service, dan controller permintaan surat
 	requestSuratRepo := repository.NewRequestSuratRepository(db)
 	requestSuratService := service.NewRequestSuratService(requestSuratRepo)
 	requestSuratController := controller.NewRequestSuratController(requestSuratService)
 
+
 	// Routes untuk permintaan surat
 	router.GET("/api/request/warga/:nik", requestSuratController.FindWargaByNik)
 	router.POST("/api/request/surat", requestSuratController.CreateRequestSurat)
+
+
+	// Pegawai feature
+	pegawaiRepo := repository.NewPegawaiRepository(db)
+	pegawaiService := service.NewPegawaiService(pegawaiRepo)
+	pegawaiController := controller.NewPegawaiController(pegawaiService)
+
+	// Routes untuk pegawai
+	router.POST("/api/pegawai", pegawaiController.CreatePegawai)
+	router.GET("/api/pegawai", pegawaiController.GetAllPegawai)
+	router.GET("/api/pegawai/:id", pegawaiController.GetPegawaiByID)
+	router.PUT("/api/pegawai/update/:id", pegawaiController.UpdatePegawai)
+	router.DELETE("/api/pegawai/delete/:id", pegawaiController.DeletePegawai)
+
+
 		
 
 	handler := corsMiddleware(router)

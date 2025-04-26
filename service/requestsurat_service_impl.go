@@ -5,6 +5,7 @@ import (
 	"godesaapps/dto"
 	"godesaapps/model"
 	"godesaapps/repository"
+	"strconv"
 )
 
 type requestSuratServiceImpl struct {
@@ -28,33 +29,47 @@ func (s *requestSuratServiceImpl) FindByNik(nik string) (*model.DataWarga, error
 	return warga, nil
 }
 
-
-// Service function untuk menyalin data warga ke request surat
 func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error {
-	// Mendapatkan data warga berdasarkan NIK
 	warga, err := s.repo.FindDataWargaByNIK(input.NIK)
 	if err != nil {
 		return fmt.Errorf("data warga tidak ditemukan: %v", err)
 	}
 
-	// Membuat objek request surat berdasarkan data warga
-	request := model.RequestSuratWarga{
-		IDWarga:          warga.ID,               // Mengambil ID warga
-		JenisSurat:       input.JenisSurat,       // Jenis surat diinput dari request                 // Tanggal selesai, bisa diset nanti
-		NIK:              warga.NIK,              // NIK warga yang diambil dari data warga
-		NamaLengkap:      warga.NamaLengkap,      // Nama lengkap warga yang diambil dari data warga
-		TempatLahir:      warga.TempatLahir,      // Tempat lahir warga
-		TanggalLahir:     warga.TanggalLahir,     // Tanggal lahir warga
-		JenisKelamin:     warga.JenisKelamin,     // Jenis kelamin warga
-		Pendidikan:       warga.Pendidikan,       // Pendidikan warga
-		Pekerjaan:        warga.Pekerjaan,        // Pekerjaan warga
-		Agama:            warga.Agama,            // Agama warga
-		StatusPernikahan: warga.StatusPernikahan, // Status pernikahan warga
-		Kewarganegaraan:  warga.Kewarganegaraan,  // Kewarganegaraan warga
-		Alamat:           warga.Alamat,           // Alamat warga
+	lamaTinggalInt, err := strconv.Atoi(input.LamaTinggal)
+	if err != nil {
+		return fmt.Errorf("gagal mengonversi LamaTinggal ke int: %v", err)
 	}
 
-	// Menyimpan data request surat ke database
+	penghasilanFloat, err := strconv.ParseFloat(input.Penghasilan, 64)
+	if err != nil {
+		return fmt.Errorf("gagal mengonversi Penghasilan ke float64: %v", err)
+	}
+
+	request := model.RequestSuratWarga{
+		IDWarga:          warga.ID,
+		JenisSurat:       input.JenisSurat,
+		NIK:              warga.NIK,
+		NamaLengkap:      warga.NamaLengkap,
+		TempatLahir:      warga.TempatLahir,
+		TanggalLahir:     warga.TanggalLahir,
+		JenisKelamin:     warga.JenisKelamin,
+		Pendidikan:       warga.Pendidikan,
+		Pekerjaan:        warga.Pekerjaan,
+		Agama:            warga.Agama,
+		StatusPernikahan: warga.StatusPernikahan,
+		Kewarganegaraan:  warga.Kewarganegaraan,
+		Alamat:           warga.Alamat,
+		Penghasilan:      penghasilanFloat,  
+		LamaTinggal:      lamaTinggalInt,   
+		NamaUsaha:        input.NamaUsaha,
+		JenisUsaha:       input.JenisUsaha,
+		AlamatUsaha:      input.AlamatUsaha,
+		AlamatTujuan:     input.AlamatTujuan,
+		AlasanPindah:     input.AlasanPindah,
+		KeperluanPindah:  input.KeperluanPindah,
+		TujuanPindah:     input.TujuanPindah,
+	}
+
 	err = s.repo.InsertRequestSurat(request)
 	if err != nil {
 		return fmt.Errorf("gagal menyimpan permintaan surat: %v", err)
@@ -62,7 +77,3 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 
 	return nil
 }
-
-
-
-

@@ -13,6 +13,25 @@ type User struct {
 	ResetExpiry int64  
 }
 
+
+type Admin struct {
+	Id          int    `json:"id"`
+	Email       string `json:"email"`
+	NikAdmin    string `json:"nik_admin"`
+	NamaLengkap string `json:"nama_lengkap"`
+	RoleId      string    `json:"role_id"`
+	Pass        string `json:"pass"`
+}
+
+
+type CreateUserRequest struct {
+    NikAdmin     string `json:"nikadmin" validate:"required"`
+    Password     string `json:"password" validate:"required"`
+    NamaLengkap  string `json:"nama_lengkap" validate:"required"`
+    RoleID       int    `json:"role_id" validate:"required"`
+}
+
+
 type Warga struct {
 	ID              int       `json:"id"`
 	NIK             string    `json:"nik"`

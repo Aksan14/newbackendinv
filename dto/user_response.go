@@ -6,7 +6,7 @@ type UserResponse struct {
     Nikadmin   string       `json:"nikadmin"`
     // Pass       string       `json:"password"`
     NamaLengkap string      `json:"namalengkap"`
-    Role       RoleResponse `json:"role"`
+    Role        RoleResponse `json:"role"` 
     // Success     bool   `json:"success"` 
     // Message     string `json:"message"` 
 }
