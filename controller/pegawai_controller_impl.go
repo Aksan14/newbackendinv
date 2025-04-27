@@ -1,16 +1,18 @@
 package controller
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "godesaapps/model"
-    "godesaapps/service"
-    "io"
-    "net/http"
-    "os"
-    "strconv"
-    "github.com/julienschmidt/httprouter"
+	"context"
+	"encoding/json"
+	"fmt"
+	"godesaapps/model"
+	"godesaapps/service"
+	"godesaapps/util"
+	"io"
+	"net/http"
+	"os"
+	"strconv"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 type pegawaiControllerImpl struct {
@@ -37,8 +39,8 @@ func (c *pegawaiControllerImpl) CreatePegawai(w http.ResponseWriter, r *http.Req
     nip := r.FormValue("nip")
     email := r.FormValue("email")
     jabatan := r.FormValue("jabatan")
+    namalengkap := r.FormValue("namalengkap")
 
-    // Handle file upload
     file, handler, err := r.FormFile("foto")
     if err != nil {
         http.Error(w, "Foto wajib diunggah", http.StatusBadRequest)
@@ -60,6 +62,7 @@ func (c *pegawaiControllerImpl) CreatePegawai(w http.ResponseWriter, r *http.Req
         Email:   email,
         Jabatan: jabatan,
         Foto:    filename,
+        NamaLengkap: namalengkap,
     }
 
     err = c.PegawaiService.CreatePegawai(context.Background(), pegawai)
@@ -101,12 +104,12 @@ func (c *pegawaiControllerImpl) GetPegawaiByID(w http.ResponseWriter, r *http.Re
 
 func (c *pegawaiControllerImpl) UpdatePegawai(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
     err := r.ParseMultipartForm(10 << 20)
-    if err != nil {
+    if (err != nil) {
         http.Error(w, "Gagal parsing form", http.StatusBadRequest)
         return
     }
 
-    idStr := r.FormValue("id")
+    idStr := ps.ByName("id")
     id, err := strconv.ParseInt(idStr, 10, 64)
     if err != nil {
         http.Error(w, "ID tidak valid", http.StatusBadRequest)
@@ -116,6 +119,7 @@ func (c *pegawaiControllerImpl) UpdatePegawai(w http.ResponseWriter, r *http.Req
     nip := r.FormValue("nip")
     email := r.FormValue("email")
     jabatan := r.FormValue("jabatan")
+    namalengkap := r.FormValue("namalengkap")
 
     oldData, err := c.PegawaiService.GetPegawaiByID(context.Background(), id)
     if err != nil {
@@ -128,9 +132,11 @@ func (c *pegawaiControllerImpl) UpdatePegawai(w http.ResponseWriter, r *http.Req
     file, handler, err := r.FormFile("foto")
     if err == nil {
         defer file.Close()
-        os.MkdirAll("uploads/pegawai", os.ModePerm)
 
-        filename := fmt.Sprintf("uploads/pegawai/%s", handler.Filename)
+        // Pastikan folder "pegawai" sudah ada
+        os.MkdirAll("pegawai", os.ModePerm)
+
+        filename := fmt.Sprintf("pegawai/%s", handler.Filename)
         dst, err := os.Create(filename)
         if err != nil {
             http.Error(w, "Gagal menyimpan file foto baru", http.StatusInternalServerError)
@@ -143,11 +149,11 @@ func (c *pegawaiControllerImpl) UpdatePegawai(w http.ResponseWriter, r *http.Req
     }
 
     pegawai := model.Pegawai{
-        ID:      id,
-        NIP:     nip,
-        Email:   email,
-        Jabatan: jabatan,
-        Foto:    fotoPath,
+        NIP:         nip,
+        Email:       email,
+        NamaLengkap: namalengkap,
+        Jabatan:     jabatan,
+        Foto:        fotoPath,
     }
 
     err = c.PegawaiService.UpdatePegawai(context.Background(), pegawai)
@@ -163,15 +169,18 @@ func (c *pegawaiControllerImpl) DeletePegawai(w http.ResponseWriter, r *http.Req
     idStr := ps.ByName("id")
     id, err := strconv.ParseInt(idStr, 10, 64)
     if err != nil {
-        http.Error(w, "ID tidak valid", http.StatusBadRequest)
+        w.WriteHeader(http.StatusBadRequest)
+        util.WriteToResponseBody(w, map[string]string{"error": "ID tidak valid"})
         return
     }
 
     err = c.PegawaiService.DeletePegawai(context.Background(), id)
     if err != nil {
-        http.Error(w, "Gagal menghapus pegawai", http.StatusInternalServerError)
+        w.WriteHeader(http.StatusInternalServerError)
+        util.WriteToResponseBody(w, map[string]string{"error": "Gagal menghapus pegawai"})
         return
     }
 
-    respondWithJSON(w, http.StatusOK, map[string]string{"message": "Pegawai berhasil dihapus"})
+    w.WriteHeader(http.StatusOK)
+    util.WriteToResponseBody(w, map[string]string{"message": "Pegawai berhasil dihapus"})
 }

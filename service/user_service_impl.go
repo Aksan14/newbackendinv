@@ -32,7 +32,6 @@ func NewUserServiceImpl(userRepository repository.UserRepository, db *sql.DB) Us
 	}
 }
 
-// ======================= User CRUD =======================
 
 func (s *userServiceImpl) GetAllUsers(ctx context.Context) ([]model.User, error) {
 	return s.UserRepository.GetAllUsers(ctx)
@@ -67,8 +66,6 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, req dto.CreateUserRequ
 
 	return convertToResponseDTO(newUser, role)
 }
-
-// ======================= Helper =======================
 
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

@@ -39,6 +39,7 @@ func main() {
 	adminRepo := repository.NewAdminRepository(db)
 	adminService := service.NewAdminService(adminRepo)
 	adminController := controller.NewAdminController(adminService)
+	router.ServeFiles("/pegawai/*filepath", http.Dir("./pegawai"))
 
 	router.POST("/api/admin/create", adminController.CreateAdminFromPegawai)
 
@@ -84,13 +85,11 @@ func main() {
 	pegawaiController := controller.NewPegawaiController(pegawaiService)
 
 	// Routes untuk pegawai
-	router.POST("/api/pegawai", pegawaiController.CreatePegawai)
-	router.GET("/api/pegawai", pegawaiController.GetAllPegawai)
-	router.GET("/api/pegawai/:id", pegawaiController.GetPegawaiByID)
+	router.POST("/api/pegawai/create", pegawaiController.CreatePegawai)
+	router.GET("/api/pegawai/getall", pegawaiController.GetAllPegawai)
+	router.GET("/api/pegawai/getpegawaibyid/:id", pegawaiController.GetPegawaiByID)
 	router.PUT("/api/pegawai/update/:id", pegawaiController.UpdatePegawai)
 	router.DELETE("/api/pegawai/delete/:id", pegawaiController.DeletePegawai)
-
-
 		
 
 	handler := corsMiddleware(router)

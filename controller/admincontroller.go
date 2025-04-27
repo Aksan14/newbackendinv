@@ -17,7 +17,6 @@ func NewAdminController(service service.AdminService) *AdminController {
 
 type CreateAdminRequest struct {
 	ID          int    `json:"id"`
-	NamaLengkap string `json:"namalengkap"`
 	Password    string `json:"pass"`
 	RoleId      string `json:"role_id"`
 }
@@ -30,7 +29,7 @@ func (c *AdminController) CreateAdminFromPegawai(w http.ResponseWriter, r *http.
 		return
 	}
 
-	err := c.service.CopyPegawaiToAdmin(req.ID, req.NamaLengkap, req.Password, req.RoleId)
+	err := c.service.CopyPegawaiToAdmin(req.ID, req.Password, req.RoleId)
 	if err != nil {
 		http.Error(w, "Gagal membuat admin: "+err.Error(), http.StatusInternalServerError)
 		return

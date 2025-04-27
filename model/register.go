@@ -15,12 +15,13 @@ type User struct {
 
 
 type Admin struct {
-	Id          int    `json:"id"`
-	Email       string `json:"email"`
-	NikAdmin    string `json:"nik_admin"`
-	NamaLengkap string `json:"nama_lengkap"`
-	RoleId      string    `json:"role_id"`
-	Pass        string `json:"pass"`
+    Id          int    `json:"id"`
+    Email       string `json:"email"`
+    NikAdmin    string `json:"nik_admin"`
+    NamaLengkap string `json:"nama_lengkap"`
+    RoleId      string `json:"role_id"`
+    Pass        string `json:"pass"`
+    Jabatan     string `json:"jabatan"` 
 }
 
 

@@ -11,7 +11,6 @@ type AdminRepository interface {
 	RoleExists(roleId string) (bool, error)
 }
 
-
 type adminRepositoryImpl struct {
 	db *sql.DB
 }
@@ -22,9 +21,9 @@ func NewAdminRepository(db *sql.DB) AdminRepository {
 
 func (r *adminRepositoryImpl) FindPegawaiById(id int) (model.Admin, error) {
 	var admin model.Admin
-	query := "SELECT id, email, nip FROM pegawai WHERE id = ?"
+	query := "SELECT id, email, namalengkap, nip FROM pegawai WHERE id = ?"
 	row := r.db.QueryRow(query, id)
-	err := row.Scan(&admin.Id, &admin.Email, &admin.NikAdmin)
+	err := row.Scan(&admin.Id, &admin.Email, &admin.NikAdmin, &admin.NamaLengkap)
 	return admin, err
 }
 

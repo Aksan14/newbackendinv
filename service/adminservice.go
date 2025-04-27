@@ -8,7 +8,7 @@ import (
 )
 
 type AdminService interface {
-	CopyPegawaiToAdmin(idPegawai int, namalengkap string, pass string, roleId string) error
+	CopyPegawaiToAdmin(idPegawai int, pass string, roleId string) error
 }
 
 type adminServiceImpl struct {
@@ -19,8 +19,7 @@ func NewAdminService(repo repository.AdminRepository) AdminService {
 	return &adminServiceImpl{repo}
 }
 
-func (s *adminServiceImpl) CopyPegawaiToAdmin(idPegawai int, namalengkap string, pass string, roleId string) error {
-	// Mengecek apakah roleId valid menggunakan query ke database
+func (s *adminServiceImpl) CopyPegawaiToAdmin(idPegawai int, pass string, roleId string) error {
 	roleExists, err := s.repo.RoleExists(roleId)
 	if err != nil {
 		return err
@@ -34,7 +33,6 @@ func (s *adminServiceImpl) CopyPegawaiToAdmin(idPegawai int, namalengkap string,
 		return err
 	}
 
-	// Hash password sebelum disimpan
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -43,9 +41,9 @@ func (s *adminServiceImpl) CopyPegawaiToAdmin(idPegawai int, namalengkap string,
 	newAdmin := model.Admin{
 		Id:          pegawai.Id,
 		Email:       pegawai.Email,
-		NikAdmin:    pegawai.NikAdmin,
-		NamaLengkap: namalengkap,
-		RoleId:      roleId, // gunakan roleId yang valid
+		NikAdmin:    pegawai.NamaLengkap, 
+		NamaLengkap: pegawai.NikAdmin,    
+		RoleId:      roleId,
 		Pass:        string(hashedPassword),
 	}
 
