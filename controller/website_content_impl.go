@@ -21,7 +21,6 @@ func NewWebsiteContentController(service service.WebsiteContentService) *Website
 	return &WebsiteContentController{service}
 }
 
-// GET konten website
 func (c *WebsiteContentController) GetContent(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	content, err := c.service.GetContent()
 	if err != nil {
@@ -49,7 +48,6 @@ func (c *WebsiteContentController) UpdateContent(w http.ResponseWriter, r *http.
 
 	logoPath := r.FormValue("logo")
 
-	// Coba ambil file baru (jika ada)
 	file, handler, err := r.FormFile("logo")
 	if err == nil {
 		defer file.Close()
@@ -72,14 +70,11 @@ func (c *WebsiteContentController) UpdateContent(w http.ResponseWriter, r *http.
 			return
 		}
 
-		// Pakai file baru
 		req.Logo = filePath
 	} else {
-		// Tidak ada file baru, pakai path lama
 		req.Logo = logoPath
 	}
 
-	// Update konten
 	err = c.service.UpdateContent(&req)
 	if err != nil {
 		http.Error(w, "Gagal memperbarui konten", http.StatusInternalServerError)

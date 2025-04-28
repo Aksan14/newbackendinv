@@ -24,7 +24,6 @@ func NewWargaController(wargaService service.WargaService) WargaController {
 	}
 }
 
-// ========== Controller Register Warga dengan file upload ==========
 func (controller *wargaControllerImpl) RegisterWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Gagal membaca form data", http.StatusBadRequest)
@@ -114,7 +113,6 @@ func (controller *wargaControllerImpl) InsertDataWarga(w http.ResponseWriter, r 
 	util.WriteToResponseBody(w, response)
 }
 
-// ========== Controller Get All Warga ==========
 func (controller *wargaControllerImpl) GetAllWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wargas, err := controller.WargaService.GetAllWarga()
 	if err != nil {
@@ -133,7 +131,6 @@ func (controller *wargaControllerImpl) GetAllWarga(w http.ResponseWriter, r *htt
 	util.WriteToResponseBody(w, response)
 }
 
-// ========== Controller Update Data Warga ==========
 func (controller *wargaControllerImpl) UpdateWarga(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	idStr := params.ByName("id")
 	id, err := strconv.Atoi(idStr)
@@ -165,7 +162,6 @@ func (controller *wargaControllerImpl) UpdateWarga(w http.ResponseWriter, r *htt
 }
 
 
-// ========== Controller Delete Data Warga ==========
 func (controller *wargaControllerImpl) DeleteWarga(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	idStr := params.ByName("id")
 	id, err := strconv.Atoi(idStr)

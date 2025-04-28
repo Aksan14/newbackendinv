@@ -17,7 +17,6 @@ import (
 func main() {
 	fmt.Println("DesaApps Runn...")
 
-	// Database connection
 	db, err := config.ConnectToDatabase()
 	util.SentPanicIfError(err)
 
@@ -43,7 +42,6 @@ func main() {
 
 	router.POST("/api/admin/create", adminController.CreateAdminFromPegawai)
 
-	// Define routes
 	router.POST("/api/user/sign-up", userController.CreateUser)
 	router.POST("/api/user/login", userController.LoginUser)
 	router.GET("/api/user/me", VerifyJWT(userController.GetUserInfo))
@@ -62,7 +60,6 @@ func main() {
 	router.PUT("/api/content", contentController.UpdateContent)
 	router.ServeFiles("/kontenwebsite/*filepath", http.Dir("./kontenwebsite"))
 
-	// Dashboard stats
 	dashboardRepository := repository.NewDashboardRepository(db)
 	dashboardService := service.NewDashboardService(dashboardRepository)
 	dashboardController := controller.NewDashboardController(dashboardService)
@@ -73,18 +70,14 @@ func main() {
 	requestSuratService := service.NewRequestSuratService(requestSuratRepo)
 	requestSuratController := controller.NewRequestSuratController(requestSuratService)
 
-
-	// Routes untuk permintaan surat
 	router.GET("/api/request/warga/:nik", requestSuratController.FindWargaByNik)
 	router.POST("/api/request/surat", requestSuratController.CreateRequestSurat)
 
 
-	// Pegawai feature
 	pegawaiRepo := repository.NewPegawaiRepository(db)
 	pegawaiService := service.NewPegawaiService(pegawaiRepo)
 	pegawaiController := controller.NewPegawaiController(pegawaiService)
 
-	// Routes untuk pegawai
 	router.POST("/api/pegawai/create", pegawaiController.CreatePegawai)
 	router.GET("/api/pegawai/getall", pegawaiController.GetAllPegawai)
 	router.GET("/api/pegawai/getpegawaibyid/:id", pegawaiController.GetPegawaiByID)

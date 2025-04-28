@@ -7,12 +7,10 @@ import (
     "godesaapps/model"
 )
 
-// pegawaiRepositoryImpl adalah implementasi dari PegawaiRepository
 type pegawaiRepositoryImpl struct {
     DB *sql.DB
 }
 
-// NewPegawaiRepository membuat instance pegawaiRepositoryImpl
 func NewPegawaiRepository(db *sql.DB) PegawaiRepository {
     return &pegawaiRepositoryImpl{DB: db}
 }

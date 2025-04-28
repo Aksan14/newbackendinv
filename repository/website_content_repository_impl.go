@@ -25,7 +25,6 @@ func (r *websiteContentRepository) GetContent() (*model.WebsiteContent, error) {
 }
 
 func (r *websiteContentRepository) UpdateContent(data *model.WebsiteContent) error {
-	// Menjalankan query UPDATE
 	result, err := r.db.Exec(`
 		UPDATE website_content SET 
 			logo = ?, 
@@ -44,18 +43,14 @@ func (r *websiteContentRepository) UpdateContent(data *model.WebsiteContent) err
 		data.ID,
 	)
 	
-	// Jika ada error dalam eksekusi query
 	if err != nil {
 		return err
 	}
-
-	// Mengecek berapa banyak baris yang diupdate
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
 
-	// Jika tidak ada baris yang terpengaruh (misalnya id tidak ditemukan)
 	if rowsAffected == 0 {
 		return fmt.Errorf("no rows updated, mungkin id tidak ditemukan")
 	}

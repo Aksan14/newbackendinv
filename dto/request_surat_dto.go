@@ -5,7 +5,7 @@ type RequestSuratDTO struct {
 	JenisSurat       string `json:"jenis_surat" validate:"required"`
 	NamaLengkap      string `json:"nama_lengkap" validate:"required"`
 	TempatLahir      string `json:"tempat_lahir" validate:"required"`
-	TanggalLahir     string `json:"tanggal_lahir" validate:"required"` // bisa pakai time.Time jika mau parsing
+	TanggalLahir     string `json:"tanggal_lahir" validate:"required"` 
 	JenisKelamin     string `json:"jenis_kelamin" validate:"required"`
 	Agama            string `json:"agama" validate:"required"`
 	Pekerjaan        string `json:"pekerjaan" validate:"required"`
