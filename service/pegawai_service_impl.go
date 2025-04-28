@@ -18,30 +18,24 @@ func NewPegawaiService(pegawaiRepo repository.PegawaiRepository) PegawaiService 
     return &PegawaiServiceImpl{pegawaiRepo: pegawaiRepo}
 }
 
-// ValidateNIP memeriksa apakah NIP sudah ada di database
-func (s *PegawaiServiceImpl) ValidateNIP(ctx context.Context, nip string) (bool, error) {
-    pegawaiList, err := s.pegawaiRepo.GetAllPegawai(ctx)
+// FindByNIP mencari pegawai berdasarkan NIP
+func (s *PegawaiServiceImpl) FindByNIP(ctx context.Context, nip string) (*model.Pegawai, error) {
+    pegawai, err := s.pegawaiRepo.FindByNIP(ctx, nip)
     if err != nil {
-        log.Println("Error fetching all pegawai:", err)
-        return false, err
+        log.Printf("Error finding pegawai by NIP %s: %v", nip, err)
+        return nil, err
     }
-
-    for _, p := range pegawaiList {
-        if p.NIP == nip {
-            return true, nil // NIP sudah ada
-        }
-    }
-    return false, nil // NIP tidak ditemukan
+    return pegawai, nil
 }
 
 // CreatePegawai menambahkan pegawai baru ke dalam database
 func (s *PegawaiServiceImpl) CreatePegawai(ctx context.Context, p model.Pegawai) error {
     // Validasi NIP, pastikan tidak ada yang duplikat
-    isDuplicate, err := s.ValidateNIP(ctx, p.NIP)
+    existingPegawai, err := s.FindByNIP(ctx, p.NIP)
     if err != nil {
         return err
     }
-    if isDuplicate {
+    if existingPegawai != nil {
         return errors.New("NIP sudah terdaftar")
     }
 
@@ -59,20 +53,35 @@ func (s *PegawaiServiceImpl) GetPegawaiByID(ctx context.Context, id int64) (mode
     return s.pegawaiRepo.GetPegawaiByID(ctx, id)
 }
 
+// UpdatePegawai memperbarui data pegawai
 func (s *PegawaiServiceImpl) UpdatePegawai(ctx context.Context, p model.Pegawai) error {
-    if p.NIP != "" {
-        isDuplicate, err := s.ValidateNIP(ctx, p.NIP)
+    if p.NIP == "" {
+        return errors.New("NIP tidak boleh kosong")
+    }
+
+    // Ambil data pegawai asli berdasarkan ID
+    oldPegawai, err := s.pegawaiRepo.GetPegawaiByID(ctx, p.ID)
+    if err != nil {
+        log.Printf("Error fetching pegawai by ID %d: %v", p.ID, err)
+        return errors.New("Pegawai tidak ditemukan")
+    }
+
+    // Jika NIP berubah, periksa apakah NIP baru sudah digunakan oleh pegawai lain
+    if p.NIP != oldPegawai.NIP {
+        existingPegawai, err := s.FindByNIP(ctx, p.NIP)
         if err != nil {
             return err
         }
-        if isDuplicate {
-            return errors.New("NIP sudah terdaftar")
+        if existingPegawai != nil && existingPegawai.ID != p.ID {
+            return errors.New("NIP sudah terdaftar untuk pegawai lain")
         }
     }
 
+    // Lanjutkan ke repositori untuk memperbarui pegawai
     return s.pegawaiRepo.UpdatePegawai(ctx, p)
 }
 
+// DeletePegawai menghapus pegawai berdasarkan ID
 func (s *PegawaiServiceImpl) DeletePegawai(ctx context.Context, id int64) error {
     return s.pegawaiRepo.DeletePegawai(ctx, id)
 }

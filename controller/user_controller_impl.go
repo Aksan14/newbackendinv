@@ -21,7 +21,6 @@ func NewUserControllerImpl(userService service.UserService) UserController {
 }
 
 
-// GET /api/users
 func (controller *userControllerImpl) GetAllUsers(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ctx := r.Context()
 
@@ -46,18 +45,30 @@ func (controller *userControllerImpl) GetAllUsers(w http.ResponseWriter, r *http
 	util.WriteToResponseBody(w, response)
 }
 
-// DELETE /api/user/:id
 func (controller *userControllerImpl) DeleteUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
+    id := ps.ByName("id")
 
-	err := controller.UserService.DeleteUser(r.Context(), id)
-	if err != nil {
-		http.Error(w, "User not found or failed to delete", http.StatusNotFound)
-		return
-	}
+    err := controller.UserService.DeleteUser(r.Context(), id)
+    if err != nil {
+        response := dto.ResponseList{
+            Code:    http.StatusNotFound,
+            Status:  "Not Found",
+            Message: "User not found or failed to delete",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusNotFound)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("User deleted successfully"))
+    response := dto.ResponseList{
+        Code:    http.StatusOK,
+        Status:  "OK",
+        Message: "User deleted successfully",
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    util.WriteToResponseBody(w, response)
 }
 
 
@@ -92,7 +103,6 @@ func (controller *userControllerImpl) CreateUser(w http.ResponseWriter, r *http.
 	util.WriteToResponseBody(w, response)
 }
 
-// POST /api/user/login
 func (controller *userControllerImpl) LoginUser(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var loginRequest dto.LoginUserRequest
 
@@ -132,7 +142,6 @@ func (controller *userControllerImpl) LoginUser(w http.ResponseWriter, r *http.R
 	util.WriteToResponseBody(w, response)
 }
 
-// GET /api/user/info
 func (controller *userControllerImpl) GetUserInfo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" || len(authHeader) < 8 {
@@ -226,35 +235,54 @@ func (controller *userControllerImpl) ForgotPassword(w http.ResponseWriter, r *h
 	util.WriteToResponseBody(w, response)
 }
 
-// POST /api/user/reset-password
 func (controller *userControllerImpl) ResetPassword(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	token := r.URL.Query().Get("token")
+    token := r.URL.Query().Get("token")
 
-	if token == "" {
-		http.Error(w, "Token tidak ditemukan", http.StatusBadRequest)
-		return
-	}
+    if token == "" {
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest,
+            Status:  "Bad Request",
+            Message: "Token tidak ditemukan",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	var req dto.ResetPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Request tidak valid", http.StatusBadRequest)
-		return
-	}
+    var req dto.ResetPasswordRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest,
+            Status:  "Bad Request",
+            Message: "Request tidak valid",
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	req.Token = token
-	err := controller.UserService.ResetPassword(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+    req.Token = token
+    err := controller.UserService.ResetPassword(req)
+    if err != nil {
+        response := dto.ResponseList{
+            Code:    http.StatusBadRequest,
+            Status:  "Bad Request",
+            Message: err.Error(),
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusBadRequest)
+        util.WriteToResponseBody(w, response)
+        return
+    }
 
-	response := map[string]interface{}{
-		"code":    http.StatusOK,
-		"status":  "ok",
-		"message": "Password berhasil direset",
-	}
+    response := dto.ResponseList{
+        Code:    http.StatusOK,
+        Status:  "OK",
+        Message: "Password berhasil direset",
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+    w.Header().Set("Content-Type", "application/json")
+    util.WriteToResponseBody(w, response)
 }
