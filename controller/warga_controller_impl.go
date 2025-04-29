@@ -7,6 +7,7 @@ import (
 	"godesaapps/service"
 	"godesaapps/util"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -116,6 +117,7 @@ func (controller *wargaControllerImpl) InsertDataWarga(w http.ResponseWriter, r 
 func (controller *wargaControllerImpl) GetAllWarga(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wargas, err := controller.WargaService.GetAllWarga()
 	if err != nil {
+		log.Printf("Error saat mengambil data warga: %v", err)
 		http.Error(w, "Gagal mengambil data warga", http.StatusInternalServerError)
 		return
 	}

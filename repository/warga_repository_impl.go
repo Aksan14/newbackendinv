@@ -23,9 +23,9 @@ func (r *wargaRepositoryImpl) InsertWarga(warga model.Warga) error {
 func (r *wargaRepositoryImpl) InsertDataWarga(w model.DataWarga) error {
 	_, err := r.db.Exec(`
 		INSERT INTO datawarga 
-		(nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan,
+		(nik, nama_lengkap, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, agama, status_pernikahan, kewarganegaraan, alamat) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan, w.Alamat,
 	)
 	return err
 }
@@ -44,15 +44,22 @@ func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 		var warga model.DataWarga
 		err := rows.Scan(
 			&warga.ID, &warga.NIK, &warga.NamaLengkap, &warga.TempatLahir, &warga.TanggalLahir,
-			&warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan, &warga.Agama, &warga.StatusPernikahan, &warga.Kewarganegaraan, &warga.Alamat,
+			&warga.JenisKelamin, &warga.Pendidikan, &warga.Pekerjaan, &warga.Agama,
+			&warga.StatusPernikahan, &warga.Kewarganegaraan, &warga.Alamat,
 		)
 		if err != nil {
 			return nil, err
 		}
 		wargas = append(wargas, warga)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return wargas, nil
 }
+
 
 func (r *wargaRepositoryImpl) UpdateWarga(id int, w model.DataWarga) error {
 	_, err := r.db.Exec("UPDATE datawarga SET nik=?, nama_lengkap=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, pendidikan=?, pekerjaan=?, agama=?, status_pernikahan=?, kewarganegaraan=? WHERE id=?",
