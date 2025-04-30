@@ -62,8 +62,8 @@ func (r *wargaRepositoryImpl) GetAllWarga() ([]model.DataWarga, error) {
 
 
 func (r *wargaRepositoryImpl) UpdateWarga(id int, w model.DataWarga) error {
-	_, err := r.db.Exec("UPDATE datawarga SET nik=?, nama_lengkap=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, pendidikan=?, pekerjaan=?, agama=?, status_pernikahan=?, kewarganegaraan=? WHERE id=?",
-		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan, id)
+	_, err := r.db.Exec("UPDATE datawarga SET nik=?, nama_lengkap=?, tempat_lahir=?, tanggal_lahir=?, jenis_kelamin=?, pendidikan=?, pekerjaan=?, agama=?, status_pernikahan=?, kewarganegaraan=?, alamat=? WHERE id=?",
+		w.NIK, w.NamaLengkap, w.TempatLahir, w.TanggalLahir, w.JenisKelamin, w.Pendidikan, w.Pekerjaan, w.Agama, w.StatusPernikahan, w.Kewarganegaraan, w.Alamat, id)
 	return err
 }
 
