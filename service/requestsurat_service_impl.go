@@ -6,6 +6,7 @@ import (
 	"godesaapps/model"
 	"godesaapps/repository"
 	"strconv"
+	"time"
 )
 
 type requestSuratServiceImpl struct {
@@ -35,14 +36,57 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 		return fmt.Errorf("data warga tidak ditemukan: %v", err)
 	}
 
-	lamaTinggalInt, err := strconv.Atoi(input.LamaTinggal)
-	if err != nil {
-		return fmt.Errorf("gagal mengonversi LamaTinggal ke int: %v", err)
+	// Validasi LamaTinggal
+	var lamaTinggal *int
+	if input.JenisSurat == "Domisili" {
+		if input.LamaTinggal == "" {
+			return fmt.Errorf("lama tinggal harus diisi untuk surat domisili")
+		}
+		lamaTinggalInt, err := strconv.Atoi(input.LamaTinggal)
+		if err != nil {
+			return fmt.Errorf("gagal mengonversi LamaTinggal ke int: %v", err)
+		}
+		if lamaTinggalInt < 6 {
+			return fmt.Errorf("lama tinggal minimal 6 bulan untuk surat domisili")
+		}
+		lamaTinggal = &lamaTinggalInt
+	} else {
+		if input.LamaTinggal != "" {
+			lamaTinggalInt, err := strconv.Atoi(input.LamaTinggal)
+			if err != nil {
+				return fmt.Errorf("gagal mengonversi LamaTinggal ke int: %v", err)
+			}
+			lamaTinggal = &lamaTinggalInt
+		} else {
+			lamaTinggal = nil // Set ke nil untuk jenis surat lain
+		}
 	}
 
-	penghasilanFloat, err := strconv.ParseFloat(input.Penghasilan, 64)
-	if err != nil {
-		return fmt.Errorf("gagal mengonversi Penghasilan ke float64: %v", err)
+	// Validasi Penghasilan
+	var penghasilan float64
+	if input.Penghasilan != "" {
+		p, err := strconv.ParseFloat(input.Penghasilan, 64)
+		if err != nil {
+			return fmt.Errorf("gagal mengonversi Penghasilan ke float64: %v", err)
+		}
+		penghasilan = p
+	} else {
+		penghasilan = 0.0
+	}
+
+	// Validasi TanggalKematian
+	var tanggalKematian *string
+	if input.JenisSurat == "Kematian" {
+		if input.TanggalKematian == "" {
+			return fmt.Errorf("tanggal kematian harus diisi untuk surat kematian")
+		}
+		_, err := time.Parse("2006-01-02", input.TanggalKematian)
+		if err != nil {
+			return fmt.Errorf("format tanggal kematian tidak valid: %v", err)
+		}
+		tanggalKematian = &input.TanggalKematian
+	} else {
+		tanggalKematian = nil
 	}
 
 	request := model.RequestSuratWarga{
@@ -59,8 +103,8 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 		StatusPernikahan: warga.StatusPernikahan,
 		Kewarganegaraan:  warga.Kewarganegaraan,
 		Alamat:           warga.Alamat,
-		Penghasilan:      penghasilanFloat,  
-		LamaTinggal:      lamaTinggalInt,   
+		Penghasilan:      penghasilan,
+		LamaTinggal:      lamaTinggal,
 		NamaUsaha:        input.NamaUsaha,
 		JenisUsaha:       input.JenisUsaha,
 		AlamatUsaha:      input.AlamatUsaha,
@@ -68,6 +112,12 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 		AlasanPindah:     input.AlasanPindah,
 		KeperluanPindah:  input.KeperluanPindah,
 		TujuanPindah:     input.TujuanPindah,
+		NamaAyah:         input.NamaAyah,
+		NamaIbu:          input.NamaIbu,
+		NomorHP:          input.NomorHP,
+		TanggalKematian:  tanggalKematian,
+		PenyebabKematian: input.PenyebabKematian,
+		TujuanSurat:      input.TujuanSurat,
 	}
 
 	err = s.repo.InsertRequestSurat(request)

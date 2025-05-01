@@ -9,6 +9,10 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+type response struct {
+	Message string `json:"message"`
+}
+
 type RequestSuratController struct {
 	service service.RequestSuratService
 }
@@ -17,41 +21,54 @@ func NewRequestSuratController(service service.RequestSuratService) *RequestSura
 	return &RequestSuratController{service}
 }
 
+func (c *RequestSuratController) sendResponse(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	response := response{
+		Message: message,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Printf("Gagal encode JSON: %v\n", err)
+	}
+}
+
 func (c *RequestSuratController) FindWargaByNik(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	nik := ps.ByName("nik")
 	if nik == "" {
-		http.Error(w, "NIK tidak boleh kosong", http.StatusBadRequest)
+		c.sendResponse(w, http.StatusBadRequest, "NIK tidak boleh kosong")
 		return
 	}
 
 	warga, err := c.service.FindByNik(nik)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Gagal mencari data warga: %v", err), http.StatusInternalServerError)
+		c.sendResponse(w, http.StatusInternalServerError, fmt.Sprintf("Gagal mencari data warga: %v", err))
 		return
 	}
 
 	if warga == nil {
-		http.Error(w, "Data warga tidak ditemukan", http.StatusNotFound)
+		c.sendResponse(w, http.StatusNotFound, "Data warga tidak ditemukan")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(warga)
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(warga); err != nil {
+		fmt.Printf("Gagal encode JSON: %v\n", err)
+	}
 }
 
 func (c *RequestSuratController) CreateRequestSurat(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var input dto.RequestSuratDTO
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		c.sendResponse(w, http.StatusBadRequest, "Input tidak valid")
 		return
 	}
 
 	err := c.service.RequestSurat(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.sendResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Permintaan surat berhasil dikirim."))
+	c.sendResponse(w, http.StatusCreated, "Permintaan surat berhasil dikirim")
 }

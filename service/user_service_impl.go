@@ -92,7 +92,7 @@ func convertToResponseDTO(user model.User, role model.MstRole) dto.UserResponse 
 	}
 }
 
-// ======================= Auth & JWT =======================
+//authh
 
 type Claims struct {
 	Nikadmin    string `json:"nikadmin"`
@@ -133,7 +133,6 @@ func (s *userServiceImpl) LoginUser(ctx context.Context, req dto.LoginUserReques
 	return s.GenerateJWT(user.Email, user.Nikadmin, user.NamaLengkap, user.RoleID)
 }
 
-// ======================= Info & Role =======================
 
 func (s *userServiceImpl) GetUserInfoByNikAdmin(ctx context.Context, nikadmin string) (dto.UserResponse, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
@@ -197,8 +196,6 @@ func (s *userServiceImpl) FindByNIK(ctx context.Context, nik string) (*dto.UserR
 	return &response, nil
 }
 
-// ======================= Forgot/Reset Password =======================
-
 func (s *userServiceImpl) ForgotPassword(req dto.ForgotPasswordRequest) error {
 	user, err := s.UserRepository.FindByEmail(req.Email)
 	if err != nil {
@@ -212,7 +209,7 @@ func (s *userServiceImpl) ForgotPassword(req dto.ForgotPasswordRequest) error {
 		return fmt.Errorf("gagal menyimpan token reset: %w", err)
 	}
 
-	resetURL := fmt.Sprintf("http://localhost:3000/authentication/reset-password?token=%s", token)
+	resetURL := fmt.Sprintf("http://localhost:5800/authentication/reset-password?token=%s", token)
 	emailBody := fmt.Sprintf(`
         <html>
         <body>
