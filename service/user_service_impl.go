@@ -11,6 +11,7 @@ import (
 	"godesaapps/model"
 	"godesaapps/repository"
 	"godesaapps/util"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -209,7 +210,9 @@ func (s *userServiceImpl) ForgotPassword(req dto.ForgotPasswordRequest) error {
 		return fmt.Errorf("gagal menyimpan token reset: %w", err)
 	}
 
-	resetURL := fmt.Sprintf("http://localhost:5800/authentication/reset-password?token=%s", token)
+	allowedOrigin := os.Getenv("ALLOWED_ORIGIN")
+
+	resetURL := fmt.Sprintf("%s/authentication/reset-password?token=%s", allowedOrigin, token)
 	emailBody := fmt.Sprintf(`
         <html>
         <body>

@@ -36,7 +36,6 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 		return fmt.Errorf("data warga tidak ditemukan: %v", err)
 	}
 
-	// Validasi LamaTinggal
 	var lamaTinggal *int
 	if input.JenisSurat == "Domisili" {
 		if input.LamaTinggal == "" {
@@ -58,11 +57,9 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 			}
 			lamaTinggal = &lamaTinggalInt
 		} else {
-			lamaTinggal = nil // Set ke nil untuk jenis surat lain
-		}
+			lamaTinggal = nil		}
 	}
 
-	// Validasi Penghasilan
 	var penghasilan float64
 	if input.Penghasilan != "" {
 		p, err := strconv.ParseFloat(input.Penghasilan, 64)
@@ -74,7 +71,6 @@ func (s *requestSuratServiceImpl) RequestSurat(input dto.RequestSuratDTO) error 
 		penghasilan = 0.0
 	}
 
-	// Validasi TanggalKematian
 	var tanggalKematian *string
 	if input.JenisSurat == "Kematian" {
 		if input.TanggalKematian == "" {
