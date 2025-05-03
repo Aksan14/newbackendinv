@@ -37,7 +37,7 @@ type Warga struct {
 	ID              int       `json:"id"`
 	NIK             string    `json:"nik"`
 	NamaLengkap     string    `json:"nama_lengkap"`
-	Alamat          string    `json:"alamat"`
+	Alamat          string    `json:"alamat_lengkap"`
 	JenisSurat      string    `json:"jenis_surat"`
 	Keterangan      string    `json:"keterangan"`
 	FileUpload      string    `json:"file_upload"`
@@ -58,7 +58,7 @@ type DataWarga struct {
 	Agama				string `json:"agama"`
 	StatusPernikahan	string `json:"status_pernikahan"`
 	Kewarganegaraan		string `json:"kewarganegaraan"`
-	Alamat           	string `json:"alamat"`
+	Alamat           	string `json:"alamat_lengkap"`
 }
 
 
