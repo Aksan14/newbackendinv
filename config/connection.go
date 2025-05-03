@@ -18,6 +18,7 @@ var AppPort = os.Getenv("APP_PORT")
 var User = os.Getenv("DB_USER")
 var Pass = os.Getenv("DB_PASSWORD")
 var DBName = os.Getenv("DB_NAME")
+var AppHost = os.Getenv("APP_HOST")
 
 func ConnectToDatabase() (*sql.DB, error) {
 	util.SentPanicIfError(env)
